@@ -124,10 +124,108 @@ int SessionDialog::readInt(char *name, int defval, char *fname)
   return GetPrivateProfileInt("options", name, defval, fname);
 }
 
+void SessionDialog::SaveToJson(char* fname, bool asDefault) {
+	char buf[32];
+	FILE* testFile;
+	testFile = fopen("TestFile.json", "w");
+	if (!asDefault) {
+		fprintf(testFile, "[\n\t{\n");
+		fprintf(testFile, "\t\t\"host\" : %s,\n", m_host_dialog);
+		sprintf_s(buf, "%d", m_port);
+		fprintf(testFile, "\t\t\"port\" : %s,\n", buf);
+	}
+	else
+		SettingsFromUI(); //TODO: make this compatibile properly
+	fprintf(testFile, "\t\t\"proxyhost\" : %s,\n", m_proxyhost);
+	sprintf_s(buf, "%d", m_proxyport);
+	fprintf(testFile, "\t\t\"proxyport\" : %s,\n", buf);
+	for (int i = rfbEncodingRaw; i <= LASTENCODING; i++) {
+		char buf[128];
+		sprintf_s(buf, "use_encoding_%d", i);
+		saveInt(buf, UseEnc[i], fname);
+		fprintf(testFile, "\t\t\"%s\" : %d,\n", buf, UseEnc[i]);
+	}
+		if (!PreferredEncodings.empty()) {
+			fprintf(testFile, "\t\t\"preferred_encoding\" : %d,\n", PreferredEncodings[0]);
+		}
+		fprintf(testFile, "\t\t\"viewonly\" : %d,\n", ViewOnly);
+		fprintf(testFile, "\t\t\"showtoolbar\" : %d,\n", ShowToolbar);
+		fprintf(testFile, "\t\t\"fullscreen\" : %d,\n", FullScreen);
+		fprintf(testFile, "\t\t\"SavePos\" : %d,\n", SavePos);
+		fprintf(testFile, "\t\t\"SaveSize\" : %d,\n", SaveSize);
+		fprintf(testFile, "\t\t\"GNOME\" : %d,\n", GNOME);
+		fprintf(testFile, "\t\t\"directx\" : %d,\n", Directx);
+		fprintf(testFile, "\t\t\"autoDetect\" : %d,\n", autoDetect);
+		fprintf(testFile, "\t\t\"8bit\" : %d,\n", Use8Bit);
+		fprintf(testFile, "\t\t\"shared\" : %d,\n", Shared);
+		fprintf(testFile, "\t\t\"swapmouse\" : %d,\n", SwapMouse);
+		fprintf(testFile, "\t\t\"emulate3\" : %d,\n", Emul3Buttons);
+		fprintf(testFile, "\t\t\"JapKeyboard\" : %d,\n", JapKeyboard);
+		fprintf(testFile, "\t\t\"disableclipboard\" : %d,\n", DisableClipboard);
+		fprintf(testFile, "\t\t\"Scaling\" : %d,\n", scaling);
+		fprintf(testFile, "\t\t\"AutoScaling\" : %d,\n", fAutoScaling);
+		fprintf(testFile, "\t\t\"AutoScalingEven\" : %d,\n", fAutoScalingEven);
+		fprintf(testFile, "\t\t\"AutoScalingLimit\" : %d,\n", fAutoScalingLimit);
+		fprintf(testFile, "\t\t\"scale_num\" : %d,\n", scale_num);
+		fprintf(testFile, "\t\t\"scale_den\" : %d,\n", scale_den);
+		// Tight Specific
+		fprintf(testFile, "\t\t\"cursorshape\" : %d,\n", requestShapeUpdates);
+		fprintf(testFile, "\t\t\"noremotecursor\" : %d,\n", ignoreShapeUpdates);
+		if (useCompressLevel) {
+			fprintf(testFile, "\t\t\"compresslevel\" : %d,\n", compressLevel);
+		}
+		if (enableJpegCompression) {
+			fprintf(testFile, "\t\t\"quality\" : %d,\n", jpegQualityLevel);
+		}
+		// Modif sf@2002
+		fprintf(testFile, "\t\t\"ServerScale\" : %d,\n", nServerScale);
+		fprintf(testFile, "\t\t\"Reconnect\" : %d,\n", reconnectcounter);
+		fprintf(testFile, "\t\t\"EnableCache\" : %d,\n", fEnableCache);
+		fprintf(testFile, "\t\t\"EnableZstd\" : %d,\n", fEnableZstd);
+		fprintf(testFile, "\t\t\"QuickOption\" : %d,\n", quickoption);
+		fprintf(testFile, "\t\t\"UseDSMPlugin\" : %d,\n", fUseDSMPlugin);
+		fprintf(testFile, "\t\t\"UseProxy\" : %d,\n", m_fUseProxy);
+		fprintf(testFile, "\t\t\"allowMonitorSpanning\" : %d,\n", allowMonitorSpanning);
+		fprintf(testFile, "\t\t\"ChangeServerRes\" : %d,\n", changeServerRes);
+		fprintf(testFile, "\t\t\"extendDisplay\" : %d,\n", extendDisplay);
+		fprintf(testFile, "\t\t\"showExtend\" : %d,\n", showExtend);
+		fprintf(testFile, "\t\t\"use_virt\" : %d,\n", use_virt);
+		fprintf(testFile, "\t\t\"useAllMonitors\" : %d,\n", useAllMonitors);
+		fprintf(testFile, "\t\t\"requestedWidth\" : %d,\n", requestedWidth);
+		fprintf(testFile, "\t\t\"requestedHeight\" : %d,\n", requestedHeight);
+
+
+		fprintf(testFile, "\t\t\"DSMPlugin\" : %s,\n", szDSMPluginFilename);
+		fprintf(testFile, "\t\t\"folder\" : %s,\n", folder);
+		fprintf(testFile, "\t\t\"prefix\" : %s,\n", prefix);
+		fprintf(testFile, "\t\t\"imageFormat\" : %s,\n", imageFormat);
+		fprintf(testFile, "\t\t\"InfoMsg\" : %s,\n", InfoMsg);
+		fprintf(testFile, "\t\t\"AutoReconnect\" : %d,\n", autoReconnect);
+		fprintf(testFile, "\t\t\"FileTransferTimeout\" : %d,\n", FTTimeout);
+		fprintf(testFile, "\t\t\"ThrottleMouse\" : %d,\n", throttleMouse);
+		fprintf(testFile, "\t\t\"KeepAliveInterval\" : %d,\n", keepAliveInterval);
+		fprintf(testFile, "\t\t\"AutoAcceptIncoming\" : %d,\n", fAutoAcceptIncoming);
+		fprintf(testFile, "\t\t\"AutoAcceptNoDSM\" : %d,\n", fAutoAcceptNoDSM);
+#ifdef _Gii
+		fprintf(testFile, "\t\t\"GiiEnable\" : %d,\n", giiEnable);
+#endif
+		fprintf(testFile, "\t\t\"RequireEncryption\" : %d,\n", fRequireEncryption);
+		fprintf(testFile, "\t\t\"restricted\" : %d,\n", restricted);  //hide menu
+		fprintf(testFile, "\t\t\"AllowUntrustedServers\" : %d,\n", AllowUntrustedServers);
+		fprintf(testFile, "\t\t\"nostatus\" : %d,\n", NoStatus); //hide status window
+		fprintf(testFile, "\t\t\"nohotkeys\" : %d,\n", NoHotKeys); //disable hotkeys
+		fprintf(testFile, "\t\t\"sponsor\" : %d,\n", g_disable_sponsor);
+		fprintf(testFile, "\t\t\"PreemptiveUpdates\" : %d\n", preemptiveUpdates);
+		fprintf(testFile, "\t}\n]");
+		fclose(testFile);
+	}
+
 void SessionDialog::SaveToFile(char *fname, bool asDefault)
 {
+	SaveToJson(fname, asDefault);
 	int ret;
 	char buf[32];
+	
 	if (!asDefault) {
 		ret = WritePrivateProfileString("connection", "host", m_host_dialog, fname);		
 		sprintf_s(buf, "%d", m_port);

@@ -153,6 +153,7 @@ public:
 	void SaveConnection(HWND hwnd, bool saveAs);
 	void SettingsFromUI();
 	void SettingsToUI(bool initMruNeeded = true);
+	void SaveToJson(char* fname, bool SaveToFile = false);
 	void SaveToFile(char *fname, bool SaveToFile = false);
 	void saveInt(char *name, int value, char *fname); 
 	void LoadFromFile(char *fname);
