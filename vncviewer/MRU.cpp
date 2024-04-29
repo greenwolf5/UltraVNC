@@ -1,5 +1,5 @@
 ﻿/////////////////////////////////////////////////////////////////////////////
-//  Copyright (C) 2002-2013 UltraVNC Team Members. All Rights Reserved.
+//  Copyright (C) 2002-2024 UltraVNC Team Members. All Rights Reserved.
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -16,11 +16,12 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 //  USA.
 //
-// If the source code for the program is not available from the place from
-// which you received this file, check 
-// http://www.uvnc.com/
+//  If the source code for the program is not available from the place from
+//  which you received this file, check
+//  https://uvnc.com/
 //
 ////////////////////////////////////////////////////////////////////////////
+
 
 //
 // MRU maintains a list of 'Most Recently Used' strings in the registry
@@ -35,7 +36,7 @@
 
 static const TCHAR * INDEX_VAL_NAME = _T("index");
 static const TCHAR DEL = char(127);
-TCHAR RESERVED_CHARS[5] = _T("[;=R");  //String of characters that will cause a key/value line to be parsed differently if set as a key
+TCHAR RESERVED_CHARS[5] = _T("[;=");  //String of characters that will cause a key/value line to be parsed differently if set as a key
 static const TCHAR FIRST_USEABLE_ID = _T('!');
 static const TCHAR LAST_USEABLE_ID = _T('~');
 static const int MRU_MAX_ITEM_LENGTH = 256; //Managed to get max length to 90. Issue is that we have 102
@@ -45,13 +46,12 @@ MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 {
     VNCOptions::setDefaultOptionsFileName(m_optionfile);
     m_maxnum = maxnum;
-    RESERVED_CHARS[3] = DEL;
     // Read the index entry
     ReadIndex();
 }
 
 // Add the item specified at the front of the list
-// Move it there if not already.  If this makes the
+// Move it there if not already. If this makes the
 // list longer than the maximum, older ones are deleted.
 
 void ofnInit();
@@ -142,7 +142,7 @@ int MRU::GetItem(int index, LPTSTR buf, int buflen)
         valname[2] = _T('\0');
     }
     DWORD dwbuflen = buflen;
-	GetPrivateProfileStringA("connection", valname, "",buf, buflen, m_optionfile);
+	GetPrivateProfileString("connection", valname, "",buf, buflen, m_optionfile);
     return _tcslen(buf);
 }
 
@@ -208,7 +208,7 @@ void MRU::RemoveItem(int index)
     TCHAR valname[2];
     valname[0] = m_index[index];
     valname[1] = _T('\0');
-	WritePrivateProfileStringA("connection", valname, NULL, m_optionfile);
+	WritePrivateProfileString("connection", valname, NULL, m_optionfile);
 
     for (unsigned int i = index; i <= _tcslen(m_index); i++)
         m_index[i] = m_index[i+1];    
@@ -220,7 +220,7 @@ void MRU::ReadIndex()
 {
     // read the index
     DWORD dwindexlen = sizeof(m_index);
-	if (GetPrivateProfileStringA("connection", INDEX_VAL_NAME, "", m_index, dwindexlen, m_optionfile) == 0) 
+	if (GetPrivateProfileString("connection", INDEX_VAL_NAME, "", m_index, dwindexlen, m_optionfile) == 0) 
 		WriteIndex();
 	int size = NumItems();
 }
@@ -228,7 +228,7 @@ void MRU::ReadIndex()
 // Save the index string to the registry
 void MRU::WriteIndex()
 {
-	WritePrivateProfileStringA("connection", INDEX_VAL_NAME, m_index, m_optionfile);
+	WritePrivateProfileString("connection", INDEX_VAL_NAME, m_index, m_optionfile);
 }
 
 

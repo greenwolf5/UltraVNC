@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////
-//  Copyright (C) 2002-2013 UltraVNC Team Members. All Rights Reserved.
+//  Copyright (C) 2002-2024 UltraVNC Team Members. All Rights Reserved.
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -16,11 +16,12 @@
 //  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
 //  USA.
 //
-// If the source code for the program is not available from the place from
-// which you received this file, check
-// http://www.uvnc.com/
+//  If the source code for the program is not available from the place from
+//  which you received this file, check
+//  https://uvnc.com/
 //
 ////////////////////////////////////////////////////////////////////////////
+
 
 // VNCOptions.cpp: implementation of the VNCOptions class.
 
@@ -229,7 +230,7 @@ VNCOptions::VNCOptions()
 
 	m_szDSMPluginFilename[0] = '\0';
 	setDefaultDocumentPath();
-	_tcscpy_s(m_prefix, "vnc_");
+	_tcscpy_s(m_prefix, "ultravnc_");
 	_tcscpy_s(m_imageFormat, ".jpeg");
 
 #ifdef _Gii
@@ -1015,6 +1016,14 @@ void VNCOptions::SetFromCommandLine(LPTSTR szCmdLine) {
 		{
 			//adzm 2010-08
 			m_fEnableCache = true;
+		}
+		else if (SwitchMatch(args[j], _T("classname")))
+		{
+			if (++j == i) {
+				ArgError("No classname");
+			continue;
+			}
+			strcpy_s(m_ClassName, args[j]);
 		}
 		else if (SwitchMatch(args[j], _T("throttlemouse")))
 		{
