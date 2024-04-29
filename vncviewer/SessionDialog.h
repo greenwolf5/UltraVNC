@@ -49,6 +49,9 @@ public:
 	bool m_fFromFile; // sf@2002
 	TCHAR m_host_dialog[MAX_HOST_NAME_LEN];
 	TCHAR m_proxyhost[MAX_HOST_NAME_LEN];
+	TCHAR m_alias[MAX_HOST_NAME_LEN];
+	TCHAR m_macAddress[MAX_HOST_NAME_LEN];
+	TCHAR m_ipAddress[MAX_HOST_NAME_LEN];
    	virtual ~SessionDialog();
 
 	ClientConnection *m_pCC;
@@ -153,9 +156,10 @@ public:
 	void SaveConnection(HWND hwnd, bool saveAs);
 	void SettingsFromUI();
 	void SettingsToUI(bool initMruNeeded = true);
-	void SaveToJson(char* fname, bool SaveToFile = false);
-	void SaveToFile(char *fname, bool SaveToFile = false);
+	struct cJSON* SaveToJson(char* fname, bool SaveToFile = false);
+	void SaveToFile(char* fname, bool SaveToFile = false);// , bool saveJson = true);
 	void saveInt(char *name, int value, char *fname); 
+	void LoadFromJson(char* fname, HWND hwnd = NULL);
 	void LoadFromFile(char *fname);
 	int readInt(char *name, int defval, char *fname);
 	void getAppData(char * buffer);

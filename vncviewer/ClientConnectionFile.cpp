@@ -33,6 +33,7 @@
 
 #include "vncauth.h"
 #include "UltraVNCHelperFunctions.h"
+#include <cJSON.h>
 
 extern char sz_K1[64];
 extern char sz_K2[64];
@@ -49,7 +50,7 @@ static OPENFILENAME ofn;
 
 void ofnInit()
 {
-	static char filter[] = "VNC files (*.vnc)\0*.vnc\0" \
+	static char filter[] = "VNC files (*.vnc, *.json)\0*.vnc; *.json\0" \
 						   "All files (*.*)\0*.*\0";
 	memset((void *) &ofn, 0, sizeof(OPENFILENAME));
 
@@ -135,43 +136,77 @@ void ClientConnection::Save_Latest_Connection()
 }
 
 // returns zero if successful
-int ClientConnection::LoadConnection(char *fname, bool fFromDialog, bool defaultOption)
+int ClientConnection::LoadConnectionJson(char *fname, bool fFromDialog, bool defaultOption)
 {
-	// The Connection Profile ".vnc" has been required from Connection Session Dialog Box
-	if (fFromDialog && ! defaultOption) {
-		char tname[_MAX_FNAME + _MAX_EXT];
-		ofnInit();
-		ofn.hwndOwner = m_hSessionDialog;
-		ofn.lpstrFile = fname;
-		ofn.lpstrFileTitle = tname;
-		ofn.Flags = OFN_HIDEREADONLY;
-		if (GetOpenFileName(&ofn) == 0)
-			return -1;
+	
+	FILE* jsonFile = fopen(fname, "r");
+	char buffer[5120];
+	int len = fread(buffer, 1, sizeof(buffer), jsonFile);
+	fclose(jsonFile);
+
+	cJSON* json = cJSON_Parse(buffer);
+	if (json == NULL) {
+		const char* error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL) {
+			printf("Error: %s\n", error_ptr);
+		}
+	}
+
+	// access the JSON data 
+	cJSON* host = cJSON_GetObjectItemCaseSensitive(json, "host");
+	if (cJSON_IsString(host) && (host->valuestring != NULL)) {
+		for (int i = 0; i < strlen(host->valuestring); i++) {
+			//int x = 0;
+			//sscanf_s(buf + i * 2, "%2x", &x);
+			m_host[i] = host->valuestring[i];
+		}
+		m_host[strlen(host->valuestring)] = '\0';
 	}
 
 	if (!defaultOption) {
-		GetPrivateProfileString("connection", "host", "", m_host, MAX_HOST_NAME_LEN, fname);
-		if ( (m_port = GetPrivateProfileInt("connection", "port", 0, fname)) == 0)
-			return -1;
+		cJSON* port = cJSON_GetObjectItemCaseSensitive(json, "port");
+		if (port != NULL) {
+			m_port = port->valueint;
+		}
+
+		/*if (((m_port = port->valueint) == 0))
+			return -1;*/
 	}
 	else {
 		strcpy_s(m_host,"");
 		m_port = -1;
 	}
-	GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
-	m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
-    m_fUseProxy = GetPrivateProfileInt("options", "UseProxy", 0, fname) ? true : false;
+	cJSON* proxyHost = cJSON_GetObjectItemCaseSensitive(json, "proxyhost");
+	if (cJSON_IsString(proxyHost) && (proxyHost->valuestring != NULL)) {
+		for (int i = 0; i < strlen(proxyHost->valuestring); i++) {
+			//int x = 0;
+			//sscanf_s(buf + i * 2, "%2x", &x);
+			m_proxyhost[i] = proxyHost->valuestring[i];
+		}
+		m_proxyhost[strlen(proxyHost->valuestring)] = '\0';
+	}
+	//m_proxyhost = proxyHost;
+	cJSON* proxyPort = cJSON_GetObjectItemCaseSensitive(json, "proxyport");
+	if (cJSON_IsString(proxyPort) && (proxyPort->valueint!= NULL)) {
+		m_proxyport = proxyPort->valueint;
+	}
+	cJSON* useProxy = cJSON_GetObjectItemCaseSensitive(json, "UseProxy");
+	if (cJSON_IsString(useProxy) && (useProxy->valueint != NULL)) {
+		m_fUseProxy = useProxy->valueint ? true : false;
+	}
 
 	char buf[32];
 	m_encPasswd[0] = '\0';
-	if (GetPrivateProfileString("connection", "password", "", buf, 32, fname) > 0) {
-		for (int i = 0; i < MAXPWLEN; i++)	{
-			int x = 0;
-			sscanf_s(buf+i*2, "%2x", &x);
-			m_encPasswd[i] = (unsigned char) x;
+
+	cJSON* password = cJSON_GetObjectItemCaseSensitive(json, "password");
+	if (cJSON_IsString(password) && (password->valuestring != NULL)) {
+		for (int i = 0; i < strlen(password->valuestring); i++) {
+			//int x = 0;
+			//sscanf_s(buf + i * 2, "%2x", &x);
+			m_encPasswd[i] = password->valuestring[i];
 		}
+		m_encPasswd[strlen(proxyHost->valuestring)] = '\0';
 	}
-	
 	if (fFromDialog)
 		m_opts->LoadOptions(fname);
 	else if (strcmp(m_host, "") == 0 || strcmp(fname, m_opts->getDefaultOptionsFileName())==0 ) {
@@ -199,3 +234,79 @@ int ClientConnection::LoadConnection(char *fname, bool fFromDialog, bool default
 	}
 	return 0;
 }
+
+int ClientConnection::LoadConnectionVnc(char* fname, bool fFromDialog, bool defaultOption)
+{
+
+	if (!defaultOption) {
+		GetPrivateProfileString("connection", "host", "", m_host, MAX_HOST_NAME_LEN, fname);
+		if ((m_port = GetPrivateProfileInt("connection", "port", 0, fname)) == 0)
+			return -1;
+	}
+	else {
+		strcpy_s(m_host, "");
+		m_port = -1;
+	}
+	GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
+	m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
+	m_fUseProxy = GetPrivateProfileInt("options", "UseProxy", 0, fname) ? true : false;
+
+	char buf[32];
+	m_encPasswd[0] = '\0';
+	if (GetPrivateProfileString("connection", "password", "", buf, 32, fname) > 0) {
+		for (int i = 0; i < MAXPWLEN; i++) {
+			int x = 0;
+			sscanf_s(buf + i * 2, "%2x", &x);
+			m_encPasswd[i] = (unsigned char)x;
+		}
+	}
+
+	if (fFromDialog)
+		m_opts->LoadOptions(fname);
+	else if (strcmp(m_host, "") == 0 || strcmp(fname, m_opts->getDefaultOptionsFileName()) == 0) {
+		// Load the rest of params 
+		strcpy_s(m_opts->m_proxyhost, m_proxyhost);
+		m_opts->m_proxyport = m_proxyport;
+		m_opts->m_fUseProxy = m_fUseProxy;
+		m_opts->LoadOptions(fname);
+		//m_opts->Register();
+		// Then display the session dialog to get missing params again
+		SessionDialog sessdlg(m_opts, this, m_pDSMPlugin); //sf@2002
+		if (!sessdlg.DoDialog())
+			throw QuietException("");
+		_tcsncpy_s(m_host, sessdlg.m_host_dialog, MAX_HOST_NAME_LEN);
+		m_port = sessdlg.m_port;
+		_tcsncpy_s(m_proxyhost, sessdlg.m_proxyhost, MAX_HOST_NAME_LEN);
+		m_proxyport = sessdlg.m_proxyport;
+		m_fUseProxy = sessdlg.m_fUseProxy;
+	}
+	else if (config_specified) {
+		strcpy_s(m_opts->m_proxyhost, m_proxyhost);
+		m_opts->m_proxyport = m_proxyport;
+		m_opts->m_fUseProxy = m_fUseProxy;
+		m_opts->LoadOptions(fname);
+	}
+	return 0;
+}
+
+int ClientConnection::LoadConnection(char* fname, bool fFromDialog, bool defaultOption) {
+
+	// The Connection Profile ".vnc" has been required from Connection Session Dialog Box
+	if (fFromDialog && !defaultOption) {
+		char tname[_MAX_FNAME + _MAX_EXT];
+		ofnInit();
+		ofn.hwndOwner = m_hSessionDialog;
+		ofn.lpstrFile = fname;
+		ofn.lpstrFileTitle = tname;
+		ofn.Flags = OFN_HIDEREADONLY;
+		if (GetOpenFileName(&ofn) == 0)
+			return -1;
+	}
+	if (fname[strlen(fname) - 4] == 'j') {
+		return LoadConnectionJson(fname, fFromDialog, defaultOption);
+	}
+	else {
+		return LoadConnectionVnc(fname, fFromDialog, defaultOption);
+	}
+}
+

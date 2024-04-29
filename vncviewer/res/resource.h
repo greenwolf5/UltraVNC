@@ -137,6 +137,7 @@
 #define IDC_PLUGIN_STATUS               1040
 #define IDC_CURR_REMOTE                 1041
 #define IDC_ABORT_B2                    1042
+#define IDC_ALIASNAME_EDIT              1043
 #define IDC_LOCAL_LIST                  1052
 #define IDC_REMOTE_LIST                 1053
 #define IDC_LOCAL_ROOT_B                1054
@@ -266,6 +267,8 @@
 #define IDC_PREFIX                      1184
 #define IDC_RADIO3                      1185
 #define IDC_RADIO_NOVIRT                1185
+#define IDC_IPADDRESS                   1186
+#define IDC_MACADDRESS                  1187
 #define IDC_ENCODING_BASE               1199
 #define IDC_RAWRADIO                    2000
 #define IDC_RRERADIO                    2002
@@ -339,6 +342,7 @@
 #define IDC_UVNCCOM                     2076
 #define IDC_UVVERSION                   2077
 #define IDC_UVVERSION2                  2078
+#define IDC_LOADJSON                    2078
 #define IDC_STATIC_SPLIT                9000
 #define IDC_HOSTNAME_DEL                9001
 #define ID_SESSION_SET_CRECT            32777

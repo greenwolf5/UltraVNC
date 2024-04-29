@@ -339,15 +339,43 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						SendMessage(hUsePlugin, BM_SETCHECK, TRUE, 0);
 					}
 				}
-				//EndAaronP
-				_this->LoadFromFile(szFileName);
+				if (szFileName[strlen(szFileName) - 4] == 'j') {
+					_this->LoadFromJson(szFileName);
+				}
+				else {
+					_this->LoadFromFile(szFileName);
+				}
 				_this->SettingsToUI();
 			}
 			_this->m_fFromOptions = true;
 			_this->m_fFromFile = true;
 			return TRUE;
 		}
+		case IDC_LOADJSON: 
+			//
+			//somehow load every json into the .vnc files
+			TCHAR szFileName[MAX_PATH];
+			memset(szFileName, '\0', MAX_PATH);
+			if (_this->m_pCC->LoadConnection(szFileName, true) != -1)
+			{
+				_this->LoadFromJson(szFileName, hwnd);
 
+				//TCHAR szHost[250];
+				//SetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, szHost);
+				////AaronP
+				//HWND hPlugins = GetDlgItem(hwnd, IDC_PLUGINS_COMBO);
+				//if (strcmp(_this->szDSMPluginFilename, "") != 0 && _this->fUseDSMPlugin) {
+				//	int pos = SendMessage(hPlugins, CB_FINDSTRINGEXACT, -1,
+				//		(LPARAM) & (_this->szDSMPluginFilename[0]));
+
+				//	if (pos != CB_ERR) {
+				//		SendMessage(hPlugins, CB_SETCURSEL, pos, 0);
+				//		HWND hUsePlugin = GetDlgItem(hwnd, IDC_PLUGIN_CHECK);
+				//		SendMessage(hUsePlugin, BM_SETCHECK, TRUE, 0);
+				//	}
+				//}
+				break;
+			}
 		// [v1.0.2-jp1 fix]
 		case IDC_HOSTNAME_DEL:
 			_this->SettingsFromUI();
@@ -569,6 +597,9 @@ void SessionDialog::InitDlgProc(bool loadhost, bool initMruNeeded)
 		_tcscat_s(tmphost, 256, _itoa(m_proxyport, tmphost2, 10));
 		SetDlgItemText(hwnd, IDC_PROXY_EDIT, tmphost);
 	}
+
+	_tcscpy_s(tmphost, m_alias);
+	SetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, tmphost);
 
 	if (m_fUseProxy) {
 		SendMessage(GetDlgItem(hwnd, IDC_RADIOREPEATER), BM_SETCHECK, m_fUseProxy, 0);

@@ -987,13 +987,30 @@ void SessionDialog::InitDlgProcListen()
 {
 	HWND hwnd = ListenHwnd;
 	SetDlgItemInt(hwnd, IDC_LISTENPORT, listenport, FALSE);
+	
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 void SessionDialog::ReadDlgProcListen()
 {
+	TCHAR ip[250];
+	TCHAR mac[250];
+	TCHAR tempValue[250];
 	HWND hwnd = ListenHwnd;
 	listenport = GetDlgItemInt(hwnd, IDC_LISTENPORT, NULL, TRUE);
+	GetDlgItemText(hwnd, IDC_MACADDRESS, ip, MAX_HOST_NAME_LEN);
+	if (ParseDisplay(ip, tempValue, MAX_HOST_NAME_LEN, &m_port)) {
+		for (size_t i = 0, len = strlen(tempValue); i < len; i++)
+			tempValue[i] = toupper(tempValue[i]);
+		_tcscpy_s(m_ipAddress, tempValue);
+	}
+	memset(tempValue, '\0', 250);
+	GetDlgItemText(hwnd, IDC_MACADDRESS, ip, MAX_HOST_NAME_LEN);
+	if (ParseDisplay(ip, tempValue, MAX_HOST_NAME_LEN, &m_port)) {
+		for (size_t i = 0, len = strlen(tempValue); i < len; i++)
+			tempValue[i] = toupper(tempValue[i]);
+		_tcscpy_s(m_macAddress, tempValue);
+	}
 }
 ////////////////////////////////////////////////////////////////////////////////
 void SessionDialog::ReadDlgProcEncoders()
@@ -1233,6 +1250,7 @@ void SessionDialog::ReadDlgProc()
 {
 	TCHAR tmphost[MAX_HOST_NAME_LEN];
 	TCHAR hostname[MAX_HOST_NAME_LEN];
+	TCHAR alias[MAX_HOST_NAME_LEN];
 	TCHAR cloudhostname[MAX_HOST_NAME_LEN];
 	HWND hwnd = SessHwnd;
 	GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, MAX_HOST_NAME_LEN);
@@ -1242,6 +1260,14 @@ void SessionDialog::ReadDlgProc()
 		_tcscpy_s(m_host_dialog, tmphost);
 	}
 	_tcscpy_s(m_proxyhost, "");
+	GetDlgItemText(hwnd, IDC_PROXY_EDIT, hostname, MAX_HOST_NAME_LEN);
+
+	GetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, alias, MAX_HOST_NAME_LEN);
+	if (ParseDisplay(alias, tmphost, MAX_HOST_NAME_LEN, &m_port)) {
+		for (size_t i = 0, len = strlen(tmphost); i < len; i++)
+			tmphost[i] = toupper(tmphost[i]);
+		_tcscpy_s(m_alias, tmphost);
+	}
 	GetDlgItemText(hwnd, IDC_PROXY_EDIT, hostname, MAX_HOST_NAME_LEN);
 	
 	m_fUseProxy = SendMessage(GetDlgItem(hwnd, IDC_RADIOREPEATER), BM_GETCHECK, 0, 0) == BST_CHECKED;

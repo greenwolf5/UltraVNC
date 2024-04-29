@@ -135,6 +135,7 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -1085,6 +1086,7 @@ copy "$(OutDir)$(TargetName)$(TargetExt)" c:\uvnc\64\ipv6</Command>
     <None Include="ToDo.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\Downloads\cJSON.c" />
     <ClCompile Include="..\common\d3des.c" />
     <ClCompile Include="..\common\mnemonic.c" />
     <ClCompile Include="..\common\mn_wordlist.c" />
@@ -2282,6 +2284,7 @@ copy "$(OutDir)$(TargetName)$(TargetExt)" c:\uvnc\64\ipv6</Command>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\Downloads\cJSON.h" />
     <ClInclude Include="..\common\d3des.h" />
     <ClInclude Include="..\common\mnemonic.h" />
     <ClInclude Include="..\common\UltraVncZ.h" />

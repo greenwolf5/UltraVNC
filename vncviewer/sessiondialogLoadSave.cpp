@@ -28,10 +28,14 @@
 #include <direct.h>
 #include <fstream>
 #include "UltraVNCHelperFunctions.h"
+#include <cJSON.h>
+#include <stdio.h>
+#include <dirent.h>
 extern char sz_K1[64];
 extern char sz_K2[64];
 extern bool g_disable_sponsor;
 static OPENFILENAME ofn;
+TCHAR m_host[MAX_HOST_NAME_LEN];
 
 void SessionDialog::SaveConnection(HWND hwnd, bool saveAs)
 {
@@ -124,105 +128,115 @@ int SessionDialog::readInt(char *name, int defval, char *fname)
   return GetPrivateProfileInt("options", name, defval, fname);
 }
 
-void SessionDialog::SaveToJson(char* fname, bool asDefault) {
+struct cJSON* SessionDialog::SaveToJson(char* fname, bool asDefault) {
 	char buf[32];
-	FILE* testFile;
-	testFile = fopen("TestFile.json", "w");
+
+
+	cJSON* json = cJSON_CreateObject();
+
 	if (!asDefault) {
-		fprintf(testFile, "[\n\t{\n");
-		fprintf(testFile, "\t\t\"host\" : %s,\n", m_host_dialog);
+		cJSON_AddStringToObject(json, "host", m_host);
 		sprintf_s(buf, "%d", m_port);
-		fprintf(testFile, "\t\t\"port\" : %s,\n", buf);
+		cJSON_AddNumberToObject(json, "port", atoi(buf));
 	}
 	else
 		SettingsFromUI(); //TODO: make this compatibile properly
-	fprintf(testFile, "\t\t\"proxyhost\" : %s,\n", m_proxyhost);
+	cJSON_AddStringToObject(json, "proxyhost", m_proxyhost);
 	sprintf_s(buf, "%d", m_proxyport);
-	fprintf(testFile, "\t\t\"proxyport\" : %s,\n", buf);
+	cJSON_AddNumberToObject(json, "proxyport", atoi(buf));
+
+	cJSON_AddStringToObject(json, "alias", m_alias);
+	cJSON_AddStringToObject(json, "ipAddress", m_ipAddress);
+	cJSON_AddStringToObject(json, "macAddress", m_macAddress);
+
 	for (int i = rfbEncodingRaw; i <= LASTENCODING; i++) {
 		char buf[128];
 		sprintf_s(buf, "use_encoding_%d", i);
 		saveInt(buf, UseEnc[i], fname);
-		fprintf(testFile, "\t\t\"%s\" : %d,\n", buf, UseEnc[i]);
+		cJSON_AddBoolToObject(json, buf, UseEnc[1]);
 	}
 		if (!PreferredEncodings.empty()) {
-			fprintf(testFile, "\t\t\"preferred_encoding\" : %d,\n", PreferredEncodings[0]);
+			cJSON_AddNumberToObject(json, "preferred_encoding", PreferredEncodings[0]);
 		}
-		fprintf(testFile, "\t\t\"viewonly\" : %d,\n", ViewOnly);
-		fprintf(testFile, "\t\t\"showtoolbar\" : %d,\n", ShowToolbar);
-		fprintf(testFile, "\t\t\"fullscreen\" : %d,\n", FullScreen);
-		fprintf(testFile, "\t\t\"SavePos\" : %d,\n", SavePos);
-		fprintf(testFile, "\t\t\"SaveSize\" : %d,\n", SaveSize);
-		fprintf(testFile, "\t\t\"GNOME\" : %d,\n", GNOME);
-		fprintf(testFile, "\t\t\"directx\" : %d,\n", Directx);
-		fprintf(testFile, "\t\t\"autoDetect\" : %d,\n", autoDetect);
-		fprintf(testFile, "\t\t\"8bit\" : %d,\n", Use8Bit);
-		fprintf(testFile, "\t\t\"shared\" : %d,\n", Shared);
-		fprintf(testFile, "\t\t\"swapmouse\" : %d,\n", SwapMouse);
-		fprintf(testFile, "\t\t\"emulate3\" : %d,\n", Emul3Buttons);
-		fprintf(testFile, "\t\t\"JapKeyboard\" : %d,\n", JapKeyboard);
-		fprintf(testFile, "\t\t\"disableclipboard\" : %d,\n", DisableClipboard);
-		fprintf(testFile, "\t\t\"Scaling\" : %d,\n", scaling);
-		fprintf(testFile, "\t\t\"AutoScaling\" : %d,\n", fAutoScaling);
-		fprintf(testFile, "\t\t\"AutoScalingEven\" : %d,\n", fAutoScalingEven);
-		fprintf(testFile, "\t\t\"AutoScalingLimit\" : %d,\n", fAutoScalingLimit);
-		fprintf(testFile, "\t\t\"scale_num\" : %d,\n", scale_num);
-		fprintf(testFile, "\t\t\"scale_den\" : %d,\n", scale_den);
+		//cJSON_AddBoolToObject(json, "viewonly", ViewOnly);
+		cJSON_AddBoolToObject(json, "viewonly", ViewOnly);
+		cJSON_AddBoolToObject(json, "showtoolbar", ShowToolbar);
+		cJSON_AddBoolToObject(json, "fullscreen", FullScreen);
+		cJSON_AddBoolToObject(json, "SavePos", SavePos);
+		cJSON_AddBoolToObject(json, "SaveSize", SaveSize);
+		cJSON_AddBoolToObject(json, "GNOME", GNOME);
+		cJSON_AddBoolToObject(json, "directx", Directx);
+		cJSON_AddBoolToObject(json, "autoDetect", autoDetect);
+		cJSON_AddBoolToObject(json, "8bit", Use8Bit);
+		cJSON_AddBoolToObject(json, "shared", Shared);
+		cJSON_AddBoolToObject(json, "swapmouse", SwapMouse);
+		cJSON_AddBoolToObject(json, "emulate3", Emul3Buttons);
+		cJSON_AddBoolToObject(json, "JapKeyboard", JapKeyboard);
+		cJSON_AddBoolToObject(json, "disableclipboard", DisableClipboard);
+		cJSON_AddBoolToObject(json, "Scaling", scaling);
+		cJSON_AddBoolToObject(json, "AutoScaling", fAutoScaling);
+		cJSON_AddBoolToObject(json, "AutoScalingEven", fAutoScalingEven);
+		cJSON_AddBoolToObject(json, "AutoScalingLimit", fAutoScalingLimit);
+		cJSON_AddBoolToObject(json, "scale_num", scale_num);
+		cJSON_AddBoolToObject(json, "scale_den", scale_den);
 		// Tight Specific
-		fprintf(testFile, "\t\t\"cursorshape\" : %d,\n", requestShapeUpdates);
-		fprintf(testFile, "\t\t\"noremotecursor\" : %d,\n", ignoreShapeUpdates);
+		cJSON_AddBoolToObject(json, "cursorshape", requestShapeUpdates);
+		cJSON_AddBoolToObject(json, "noremotecursor", ignoreShapeUpdates);
 		if (useCompressLevel) {
-			fprintf(testFile, "\t\t\"compresslevel\" : %d,\n", compressLevel);
+			cJSON_AddBoolToObject(json, "compresslevel", compressLevel);
 		}
 		if (enableJpegCompression) {
-			fprintf(testFile, "\t\t\"quality\" : %d,\n", jpegQualityLevel);
+			cJSON_AddBoolToObject(json, "quality", jpegQualityLevel);
 		}
 		// Modif sf@2002
-		fprintf(testFile, "\t\t\"ServerScale\" : %d,\n", nServerScale);
-		fprintf(testFile, "\t\t\"Reconnect\" : %d,\n", reconnectcounter);
-		fprintf(testFile, "\t\t\"EnableCache\" : %d,\n", fEnableCache);
-		fprintf(testFile, "\t\t\"EnableZstd\" : %d,\n", fEnableZstd);
-		fprintf(testFile, "\t\t\"QuickOption\" : %d,\n", quickoption);
-		fprintf(testFile, "\t\t\"UseDSMPlugin\" : %d,\n", fUseDSMPlugin);
-		fprintf(testFile, "\t\t\"UseProxy\" : %d,\n", m_fUseProxy);
-		fprintf(testFile, "\t\t\"allowMonitorSpanning\" : %d,\n", allowMonitorSpanning);
-		fprintf(testFile, "\t\t\"ChangeServerRes\" : %d,\n", changeServerRes);
-		fprintf(testFile, "\t\t\"extendDisplay\" : %d,\n", extendDisplay);
-		fprintf(testFile, "\t\t\"showExtend\" : %d,\n", showExtend);
-		fprintf(testFile, "\t\t\"use_virt\" : %d,\n", use_virt);
-		fprintf(testFile, "\t\t\"useAllMonitors\" : %d,\n", useAllMonitors);
-		fprintf(testFile, "\t\t\"requestedWidth\" : %d,\n", requestedWidth);
-		fprintf(testFile, "\t\t\"requestedHeight\" : %d,\n", requestedHeight);
+		cJSON_AddBoolToObject(json, "ServerScale", nServerScale);
+		cJSON_AddBoolToObject(json, "Reconnect", reconnectcounter);
+		cJSON_AddBoolToObject(json, "EnableCache", fEnableCache);
+		cJSON_AddBoolToObject(json, "EnableZstd", fEnableZstd);
+		cJSON_AddBoolToObject(json, "QuickOption", quickoption);
+		cJSON_AddBoolToObject(json, "UseDSMPlugin", fUseDSMPlugin);
+		cJSON_AddBoolToObject(json, "UseProxy", m_fUseProxy);
+		cJSON_AddBoolToObject(json, "allowMonitorSpanning", allowMonitorSpanning);
+		cJSON_AddBoolToObject(json, "ChangeServerRes", changeServerRes);
+		cJSON_AddBoolToObject(json, "extendDisplay", extendDisplay);
+		cJSON_AddBoolToObject(json, "showExtend", showExtend);
+		cJSON_AddBoolToObject(json, "use_virt", use_virt);
+		cJSON_AddBoolToObject(json, "useAllMonitors", useAllMonitors);
+		cJSON_AddBoolToObject(json, "requestedWidth", requestedWidth);
+		cJSON_AddBoolToObject(json, "requestedHeight", requestedHeight);
 
 
-		fprintf(testFile, "\t\t\"DSMPlugin\" : %s,\n", szDSMPluginFilename);
-		fprintf(testFile, "\t\t\"folder\" : %s,\n", folder);
-		fprintf(testFile, "\t\t\"prefix\" : %s,\n", prefix);
-		fprintf(testFile, "\t\t\"imageFormat\" : %s,\n", imageFormat);
-		fprintf(testFile, "\t\t\"InfoMsg\" : %s,\n", InfoMsg);
-		fprintf(testFile, "\t\t\"AutoReconnect\" : %d,\n", autoReconnect);
-		fprintf(testFile, "\t\t\"FileTransferTimeout\" : %d,\n", FTTimeout);
-		fprintf(testFile, "\t\t\"ThrottleMouse\" : %d,\n", throttleMouse);
-		fprintf(testFile, "\t\t\"KeepAliveInterval\" : %d,\n", keepAliveInterval);
-		fprintf(testFile, "\t\t\"AutoAcceptIncoming\" : %d,\n", fAutoAcceptIncoming);
-		fprintf(testFile, "\t\t\"AutoAcceptNoDSM\" : %d,\n", fAutoAcceptNoDSM);
+		cJSON_AddStringToObject(json, "DSMPlugin", szDSMPluginFilename);
+		cJSON_AddStringToObject(json, "folder", folder); //Formatted wrong i.e "\User\sesa\" etc. instead of \\ will require special attention later
+		cJSON_AddStringToObject(json, "prefix", prefix);
+		cJSON_AddStringToObject(json, "imageFormat", imageFormat);
+		cJSON_AddStringToObject(json, "InfoMsg", InfoMsg);
+		cJSON_AddBoolToObject(json, "AutoReconnect", autoReconnect);
+		cJSON_AddBoolToObject(json, "FileTransferTimeout", FTTimeout);
+		cJSON_AddBoolToObject(json, "ThrottleMouse", throttleMouse);
+		cJSON_AddBoolToObject(json, "KeepAliveInterval", keepAliveInterval);
+		cJSON_AddBoolToObject(json, "AutoAcceptIncoming", fAutoAcceptIncoming);
+		cJSON_AddBoolToObject(json, "AutoAcceptNoDSM", fAutoAcceptNoDSM);
 #ifdef _Gii
-		fprintf(testFile, "\t\t\"GiiEnable\" : %d,\n", giiEnable);
+		cJSON_AddBoolToObject(json, "GiiEnable", giiEnable);
 #endif
-		fprintf(testFile, "\t\t\"RequireEncryption\" : %d,\n", fRequireEncryption);
-		fprintf(testFile, "\t\t\"restricted\" : %d,\n", restricted);  //hide menu
-		fprintf(testFile, "\t\t\"AllowUntrustedServers\" : %d,\n", AllowUntrustedServers);
-		fprintf(testFile, "\t\t\"nostatus\" : %d,\n", NoStatus); //hide status window
-		fprintf(testFile, "\t\t\"nohotkeys\" : %d,\n", NoHotKeys); //disable hotkeys
-		fprintf(testFile, "\t\t\"sponsor\" : %d,\n", g_disable_sponsor);
-		fprintf(testFile, "\t\t\"PreemptiveUpdates\" : %d\n", preemptiveUpdates);
-		fprintf(testFile, "\t}\n]");
-		fclose(testFile);
+		cJSON_AddBoolToObject(json, "RequireEncryption", fRequireEncryption);
+		cJSON_AddBoolToObject(json, "restricted", restricted);  //hide menu
+		cJSON_AddBoolToObject(json, "AllowUntrustedServers", AllowUntrustedServers);
+		cJSON_AddBoolToObject(json, "nostatus", NoStatus); //hide status window
+		cJSON_AddBoolToObject(json, "nohotkeys", NoHotKeys); //disable hotkeys
+		cJSON_AddBoolToObject(json, "sponsor", g_disable_sponsor);
+		cJSON_AddBoolToObject(json, "PreemptiveUpdates", preemptiveUpdates);
+		// convert the cJSON object to a JSON string 
+		//char* json_str = ;
+		return json;
+		// write the JSON string to a file 
+		
+
 	}
 
 void SessionDialog::SaveToFile(char *fname, bool asDefault)
 {
-	SaveToJson(fname, asDefault);
 	int ret;
 	char buf[32];
 	
@@ -231,11 +245,20 @@ void SessionDialog::SaveToFile(char *fname, bool asDefault)
 		sprintf_s(buf, "%d", m_port);
 		WritePrivateProfileString("connection", "port", buf, fname);
 	}
-	else
-		SettingsFromUI();
+	else {
+		ret = WritePrivateProfileString("connection", "host", m_host, fname);
+		sprintf_s(buf, "%d", m_port);
+		WritePrivateProfileString("connection", "port", buf, fname);
+	}
+		//SettingsFromUI();
 	ret = WritePrivateProfileString("connection", "proxyhost", m_proxyhost, fname);
 	sprintf_s(buf, "%d", m_proxyport);
 	WritePrivateProfileString("connection", "proxyport", buf, fname);
+
+	WritePrivateProfileString("connection", "alias", m_alias, fname);
+	WritePrivateProfileString("connection", "ipAddress", m_ipAddress, fname);
+	WritePrivateProfileString("connection", "macAddress", m_macAddress, fname);
+
 	for (int i = rfbEncodingRaw; i<= LASTENCODING; i++) {
 		char buf[128];
 		sprintf_s(buf, "use_encoding_%d", i);
@@ -312,9 +335,495 @@ void SessionDialog::SaveToFile(char *fname, bool asDefault)
 	saveInt("nohotkeys",			NoHotKeys,		fname); //disable hotkeys
 	saveInt("sponsor",				g_disable_sponsor,	fname);
 	saveInt("PreemptiveUpdates",	preemptiveUpdates, fname);
+
+	
+	if (!asDefault) {
+		cJSON* json = cJSON_CreateObject();
+		cJSON* arrayObject = cJSON_CreateArray();
+		FILE* fp = fopen("TestFile.json", "w");
+
+
+		DIR* d;
+		struct dirent* dir;
+		char buffer[_MAX_PATH];
+		char directory[_MAX_PATH];
+		getAppData(buffer);
+		strcat_s(buffer, "\\UltraVNC\\");
+		d = opendir(buffer);
+		if (d) {
+			while ((dir = readdir(d)) != NULL) {
+				char temp[1000];
+				strcpy(temp, dir->d_name);
+				strcpy(directory, buffer);
+				strcat_s(directory, temp);
+				if (dir->d_type == DT_REG)
+				{
+
+					LoadFromFile(directory);
+					cJSON_AddItemToArray(arrayObject, SaveToJson(directory, asDefault));
+				}
+			}
+			closedir(d);
+		}
+		fputs(cJSON_Print(arrayObject), fp);
+		fclose(fp);
+	}
+}
+void SessionDialog::LoadFromJson(char* fname, HWND hwnd) {
+	FILE* jsonFile = fopen(fname, "r");
+	char buffer[655360];
+	int len = fread(buffer, 1, sizeof(buffer), jsonFile);
+	fclose(jsonFile);
+
+	cJSON* jsonParse = cJSON_Parse(buffer);
+
+
+	if (jsonFile == NULL) {
+		const char* error_ptr = cJSON_GetErrorPtr();
+		if (error_ptr != NULL) {
+			printf("Error: %s\n", error_ptr);
+		}
+	}
+	int i;
+	cJSON* json;
+	int n = cJSON_GetArraySize(jsonParse);
+	for (i = 0; i < n; i++) {
+		json = cJSON_GetArrayItem(jsonParse, i);
+
+		// access the JSON data 
+
+
+			//memset(m_host, 0, 250);
+	//memset(m_proxyhost, 0, 250);
+		cJSON* value = cJSON_GetObjectItemCaseSensitive(json, "host");
+		if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+			for (int i = 0; i < strlen(value->valuestring); i++) {
+				m_host[i] = value->valuestring[i];
+			}
+			m_host[strlen(value->valuestring)] = '\0';
+		}
+		else {
+			value = cJSON_GetObjectItemCaseSensitive(json, "remoteHost");
+			if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+				for (int i = 0; i < strlen(value->valuestring); i++) {
+					m_host[i] = value->valuestring[i];
+				}
+				m_host[strlen(value->valuestring)] = '\0';
+			}
+		}
+
+		value = cJSON_GetObjectItemCaseSensitive(json, "ipAddress");
+		if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+			for (int i = 0; i < strlen(value->valuestring); i++) {
+				m_ipAddress[i] = value->valuestring[i];
+			}
+			m_ipAddress[strlen(value->valuestring)] = '\0';
+		}
+
+		value = cJSON_GetObjectItemCaseSensitive(json, "alias");
+		if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+			for (int i = 0; i < strlen(value->valuestring); i++) {
+				m_alias[i] = value->valuestring[i];
+			}
+			m_alias[strlen(value->valuestring)] = '\0';
+		}
+
+		value = cJSON_GetObjectItemCaseSensitive(json, "macAddress");
+		if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+			for (int i = 0; i < strlen(value->valuestring); i++) {
+				m_macAddress[i] = value->valuestring[i];
+			}
+			m_macAddress[strlen(value->valuestring)] = '\0';
+		}
+
+		value = cJSON_GetObjectItemCaseSensitive(json, "port");
+		if (value != NULL) {
+			m_port = value->valueint;
+
+		}
+		else {
+			/*value = cJSON_GetObjectItemCaseSensitive(json, "portNumber");*/
+			m_port = 5900;//value->valueint;
+		}
+
+		value = cJSON_GetObjectItemCaseSensitive(json, "proxyhost");
+		if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+			for (int i = 0; i < strlen(value->valuestring); i++) {
+				m_proxyhost[i] = value->valuestring[i];
+			}
+			m_proxyhost[strlen(value->valuestring)] = '\0';
+		}
+		else {
+			value = cJSON_GetObjectItemCaseSensitive(json, "hostProxy");
+			if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+				for (int i = 0; i < strlen(value->valuestring); i++) {
+					m_proxyhost[i] = value->valuestring[i];
+				}
+				m_proxyhost[strlen(value->valuestring)] = '\0';
+			}
+		}
+
+		value = cJSON_GetObjectItemCaseSensitive(json, "proxyport");
+		if (value != NULL) {
+			m_proxyport = value->valueint;
+		}
+		else {
+			value = cJSON_GetObjectItemCaseSensitive(json, "portProxy");
+			m_proxyport = value->valueint;
+		}
+		value = cJSON_GetObjectItem(json, "UseProxy");
+		m_fUseProxy = value->valueint;
+
+
+		for (int i = rfbEncodingRaw; i <= LASTENCODING; i++) {
+			char buf[128];
+			sprintf_s(buf, "use_encoding_%d", i);
+			cJSON* enco = cJSON_GetObjectItemCaseSensitive(json, buf);
+			if ((enco != NULL)) {
+				UseEnc[i] = enco->valueint;
+			}
+		}
+
+
+
+		int nExistingPreferred = PreferredEncodings.empty() ? rfbEncodingZRLE : PreferredEncodings[0];
+		cJSON* nPrefEnco = cJSON_GetObjectItemCaseSensitive(json, "preferred_encoding");
+		if ((nPrefEnco != NULL)) {
+			int nPreferredEncoding = nPrefEnco->valueint;
+			PreferredEncodings.clear();
+			PreferredEncodings.push_back(nPreferredEncoding);
+		}
+		cJSON* restrictedJSON = cJSON_GetObjectItemCaseSensitive(json, "restricted");
+		if ((restrictedJSON != NULL)) {
+			restricted = restrictedJSON->valueint != 0;
+		}
+		cJSON* AllowUntrustedServersJ = cJSON_GetObjectItemCaseSensitive(json, "AllowUntrustedServers");
+		if ((AllowUntrustedServersJ != NULL)) {
+			AllowUntrustedServers = AllowUntrustedServersJ->valueint != 0;
+		}
+		cJSON* ViewOnlyJ = cJSON_GetObjectItemCaseSensitive(json, "viewonly");
+		if ((ViewOnlyJ != NULL)) {
+			ViewOnly = ViewOnlyJ->valueint != 0;
+		}
+		else {
+			ViewOnlyJ = cJSON_GetObjectItemCaseSensitive(json, "viewsOnly");
+			ViewOnly = ViewOnlyJ->valueint != 0;
+		}
+		cJSON* NoStatusJ = cJSON_GetObjectItemCaseSensitive(json, "nostatus");
+		if ((NoStatusJ != NULL)) {
+			NoStatus = NoStatusJ->valueint != 0;
+		}
+		cJSON* NoHotKeysJ = cJSON_GetObjectItemCaseSensitive(json, "nohotkeys");
+		if ((NoHotKeysJ != NULL)) {
+			NoHotKeys = NoHotKeysJ->valueint != 0;
+		}
+		cJSON* ShowToolbarJ = cJSON_GetObjectItemCaseSensitive(json, "showtoolbar");
+		if ((ShowToolbarJ != NULL)) {
+			ShowToolbar = ShowToolbarJ->valueint != 0;
+		}
+		cJSON* FullScreenJ = cJSON_GetObjectItemCaseSensitive(json, "fullscreen");
+		if ((FullScreenJ != NULL)) {
+			FullScreen = FullScreenJ->valueint != 0;
+		}
+		cJSON* SavePosJ = cJSON_GetObjectItemCaseSensitive(json, "SavePos");
+		if ((SavePosJ != NULL)) {
+			SavePos = SavePosJ->valueint != 0;
+		}
+		cJSON* SaveSizeJ = cJSON_GetObjectItemCaseSensitive(json, "SaveSize");
+		if ((SaveSizeJ != NULL)) {
+			SaveSize = SaveSizeJ->valueint != 0;
+		}
+		cJSON* GNOMEJ = cJSON_GetObjectItemCaseSensitive(json, "GNOME");
+		if ((GNOMEJ != NULL)) {
+			GNOME = GNOMEJ->valueint != 0;
+		}
+		cJSON* DirectxJ = cJSON_GetObjectItemCaseSensitive(json, "directx");
+		if ((DirectxJ != NULL)) {
+			Directx = DirectxJ->valueint != 0;
+		}
+		cJSON* autoDetectJ = cJSON_GetObjectItemCaseSensitive(json, "autoDetect");
+		if ((autoDetectJ != NULL)) {
+			autoDetect = autoDetectJ->valueint != 0;
+		}
+		cJSON* Use8BitJ = cJSON_GetObjectItemCaseSensitive(json, "8Bit");
+		if ((Use8BitJ != NULL)) {
+			Use8Bit = Use8BitJ->valueint != 0;
+		}
+		cJSON* SharedJ = cJSON_GetObjectItemCaseSensitive(json, "shared");
+		if ((SharedJ != NULL)) {
+			Shared = SharedJ->valueint != 0;
+		}
+		cJSON* SwapMouseJ = cJSON_GetObjectItemCaseSensitive(json, "swapmouse");
+		if ((SwapMouseJ != NULL)) {
+			SwapMouse = SwapMouseJ->valueint != 0;
+		}
+		cJSON* Emul3ButtonsJ = cJSON_GetObjectItemCaseSensitive(json, "emulate3");
+		if ((Emul3ButtonsJ != NULL)) {
+			Emul3Buttons = Emul3ButtonsJ->valueint != 0;
+		}
+		cJSON* JapKeyboardJ = cJSON_GetObjectItemCaseSensitive(json, "JapKeyboard");
+		if ((JapKeyboardJ != NULL)) {
+			JapKeyboard = JapKeyboardJ->valueint != 0;
+		}
+		cJSON* DisableClipboardJ = cJSON_GetObjectItemCaseSensitive(json, "disableclipboard");
+		if ((DisableClipboardJ != NULL)) {
+			DisableClipboard = DisableClipboardJ->valueint != 0;
+		}
+		cJSON* scalingJ = cJSON_GetObjectItemCaseSensitive(json, "Scaling");
+		if ((scalingJ != NULL)) {
+			scaling = scalingJ->valueint != 0;
+		}
+		cJSON* fAutoScalingJ = cJSON_GetObjectItemCaseSensitive(json, "AutoScaling");
+		if ((fAutoScalingJ != NULL)) {
+			fAutoScaling = fAutoScalingJ->valueint != 0;
+		}
+		cJSON* fAutoScalingEvenJ = cJSON_GetObjectItemCaseSensitive(json, "AutoScalingEven");
+		if ((fAutoScalingEvenJ != NULL)) {
+			fAutoScalingEven = fAutoScalingEvenJ->valueint != 0;
+		}
+		cJSON* fAutoScalingLimitJ = cJSON_GetObjectItemCaseSensitive(json, "AutoScalingLimit");
+		if ((fAutoScalingLimitJ != NULL)) {
+			fAutoScalingLimit = fAutoScalingLimitJ->valueint != 0;
+		}
+		cJSON* scale_numJ = cJSON_GetObjectItemCaseSensitive(json, "scale_num");
+		if ((scale_numJ != NULL)) {
+			scale_num = scale_numJ->valueint != 0;
+		}
+		cJSON* scale_denJ = cJSON_GetObjectItemCaseSensitive(json, "scale_den");
+		if ((scale_denJ != NULL)) {
+			scale_den = scale_denJ->valueint != 0;
+		}
+		// Tight specific
+		cJSON* requestShapeUpdatesJ = cJSON_GetObjectItemCaseSensitive(json, "cursorshape");
+		if ((requestShapeUpdatesJ != NULL)) {
+			requestShapeUpdates = requestShapeUpdatesJ->valueint != 0;
+		}
+		cJSON* ignoreShapeUpdatesJ = cJSON_GetObjectItemCaseSensitive(json, "noremovecursor");
+		if ((ignoreShapeUpdatesJ != NULL)) {
+			ignoreShapeUpdates = ignoreShapeUpdatesJ->valueint != 0;
+		}
+		else {
+			ignoreShapeUpdatesJ = cJSON_GetObjectItemCaseSensitive(json, "showRemoteCursor");
+			ignoreShapeUpdates = ignoreShapeUpdatesJ->valueint != 0;
+		}
+		int level;
+		cJSON* levelJ = cJSON_GetObjectItemCaseSensitive(json, "compressLevel");
+		if ((levelJ != NULL)) {
+			level = levelJ->valueint != 0;
+		}
+		if (level != -1) {
+			useCompressLevel = true;
+			compressLevel = level;
+		}
+		levelJ = cJSON_GetObjectItemCaseSensitive(json, "quality");
+		if ((levelJ != NULL)) {
+			level = levelJ->valueint != 0;
+		}
+		level = readInt("quality", -1, fname);
+		if (level != -1) {
+			enableJpegCompression = true;
+			jpegQualityLevel = level;
+		}
+		// Modif sf@2002
+		cJSON* ReadValue = cJSON_GetObjectItemCaseSensitive(json, "ServerScale");
+		if ((ReadValue != NULL)) {
+			nServerScale = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "Reconnect");
+		if ((ReadValue != NULL)) {
+			reconnectcounter = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "EnabledCache");
+		if ((ReadValue != NULL)) {
+			fEnableCache = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "EnableZstd");
+		if ((ReadValue != NULL)) {
+			fEnableZstd = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "QuickOption");
+		if ((ReadValue != NULL)) {
+			quickoption = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "UseDSMPlugin");
+		if ((ReadValue != NULL)) {
+			fUseDSMPlugin = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItem(json, "UseProxy");
+		if ((ReadValue != NULL)) {
+			m_fUseProxy = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "allowMonitorSpanning");
+		if ((ReadValue != NULL)) {
+			allowMonitorSpanning = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "ChangeServerRes");
+		if ((ReadValue != NULL)) {
+			changeServerRes = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "extendDisplay");
+		if ((ReadValue != NULL)) {
+			extendDisplay = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "showExtend");
+		if ((ReadValue != NULL)) {
+			showExtend = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "use_virt");
+		if ((ReadValue != NULL)) {
+			use_virt = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "useAllMonitors");
+		if ((ReadValue != NULL)) {
+			useAllMonitors = ReadValue->valueint != 0;
+		}
+
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "requestedWidth");
+		if ((ReadValue != NULL)) {
+			requestedWidth = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "requestedHeight");
+		if ((ReadValue != NULL)) {
+			requestedHeight = ReadValue->valueint != 0;
+		}
+
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "DSMPlugin");
+		if (cJSON_IsString(ReadValue) && (ReadValue->valuestring != NULL)) {
+			for (int i = 0; i < strlen(ReadValue->valuestring); i++) {
+				szDSMPluginFilename[i] = ReadValue->valuestring[i];
+			}
+			szDSMPluginFilename[strlen(ReadValue->valuestring)] = '\0';
+		}
+
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "folder");
+		if (cJSON_IsString(ReadValue) && (ReadValue->valuestring != NULL)) {
+			for (int i = 0; i < strlen(ReadValue->valuestring); i++) {
+				folder[i] = ReadValue->valuestring[i];
+			}
+			folder[strlen(ReadValue->valuestring)] = '\0';
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "prefix");
+		if (cJSON_IsString(ReadValue) && (ReadValue->valuestring != NULL)) {
+			for (int i = 0; i < strlen(ReadValue->valuestring); i++) {
+				prefix[i] = ReadValue->valuestring[i];
+			}
+			prefix[strlen(ReadValue->valuestring)] = '\0';
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "imageFormat");
+		if (cJSON_IsString(ReadValue) && (ReadValue->valuestring != NULL)) {
+			for (int i = 0; i < strlen(ReadValue->valuestring); i++) {
+				imageFormat[i] = ReadValue->valuestring[i];
+			}
+			imageFormat[strlen(ReadValue->valuestring)] = '\0';
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "InfoMsg");
+		if (cJSON_IsString(ReadValue) && (ReadValue->valuestring != NULL)) {
+			for (int i = 0; i < strlen(ReadValue->valuestring); i++) {
+				InfoMsg[i] = ReadValue->valuestring[i];
+			}
+			InfoMsg[strlen(ReadValue->valuestring)] = '\0';
+		}
+		if (!g_disable_sponsor) {
+			ReadValue = cJSON_GetObjectItemCaseSensitive(json, "sponsor");
+			if ((ReadValue != NULL)) {
+				g_disable_sponsor = ReadValue->valueint != 0;
+			}
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "AutoReconnect");
+		if ((ReadValue != NULL)) {
+			autoReconnect = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "FileTransferTimeout");
+		if ((ReadValue != NULL)) {
+			FTTimeout = ReadValue->valueint != 0;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "FileTransferTimeout");
+		if ((ReadValue != NULL)) {
+			FTTimeout = ReadValue->valueint != 0;
+		}
+		if (FTTimeout > 600)
+			FTTimeout = 600; // cap at 1 minute
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "KeepAliveInterval");
+		if ((ReadValue != NULL)) {
+			keepAliveInterval = ReadValue->valueint != 0;
+		}
+		if (keepAliveInterval >= (FTTimeout - KEEPALIVE_HEADROOM))
+			keepAliveInterval = (FTTimeout - KEEPALIVE_HEADROOM);
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "ThrottleMouse");
+		if ((ReadValue != NULL)) {
+			throttleMouse = ReadValue->valueint != 0;
+		}
+#ifdef _Gii
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "GiiEnable");
+		if ((ReadValue != NULL)) {
+			giiEnable = ReadValue->valueint ? true : false;
+		}
+#endif
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "AutoAcceptIncoming");
+		if ((ReadValue != NULL)) {
+			fAutoAcceptIncoming = ReadValue->valueint ? true : false;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "AutoAcceptNoDSM");
+		if ((ReadValue != NULL)) {
+			fAutoAcceptNoDSM = ReadValue->valueint ? true : false;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "RequireEncryption");
+		if ((ReadValue != NULL)) {
+			fRequireEncryption = ReadValue->valueint ? true : false;
+		}
+		ReadValue = cJSON_GetObjectItemCaseSensitive(json, "PreemptiveUpdates");
+		if ((ReadValue != NULL)) {
+			preemptiveUpdates = ReadValue->valueint ? true : false;
+		}
+
+		char buffer[_MAX_PATH];
+		char buf[_MAX_PATH];
+		getAppData(buffer);
+		strcat_s(buffer, "\\UltraVNC\\");
+		sprintf(buf, "%.15s-%d.vnc", m_host, m_port);
+		/*strcat_s(buffer, m_host);
+		strcat_s(buffer, "-");
+		sprintf(buf, "%d", m_port);
+		strcat_s(buffer, ".vnc");*/
+		strcat_s(buffer, buf);
+		SaveToFile(buffer, true);
+		m_pMRU->AddItem(m_host);
+		//InitMRU(hwnd);
+
+	}
 }
 void SessionDialog::LoadFromFile(char *fname)
 {
+
+	TCHAR test[250];
+	
+	//memset(m_host, 0, 250);
+	//memset(m_proxyhost, 0, 250);
+		GetPrivateProfileString("connection", "host", "", test, MAX_HOST_NAME_LEN, fname);
+		strcpy(m_host, test);
+		int tempInt;
+		if ((m_port = GetPrivateProfileInt("connection", "port", 0, fname)) == 0)
+
+	GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
+	m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
+	m_fUseProxy = GetPrivateProfileInt("options", "UseProxy", 0, fname) ? true : false;
+
+
+	GetPrivateProfileString("connection", "alias", "", m_alias, MAX_HOST_NAME_LEN, fname);
+	GetPrivateProfileString("connection", "ipAddress", "", m_ipAddress, MAX_HOST_NAME_LEN, fname);
+	GetPrivateProfileString("connection", "macAddress", "", m_macAddress, MAX_HOST_NAME_LEN, fname);
+	char buf[32];
+
+	unsigned char m_encPasswd[8]; // I added this from another file
+	m_encPasswd[0] = '\0';
+	if (GetPrivateProfileString("connection", "password", "", buf, 32, fname) > 0) {
+		for (int i = 0; i < 12; i++) {
+			int x = 0;
+			sscanf_s(buf + i * 2, "%2x", &x);
+			m_encPasswd[i] = (unsigned char)x;
+		}
+	}
+
   for (int i = rfbEncodingRaw; i<= LASTENCODING; i++) {
     char buf[128];
     sprintf_s(buf, "use_encoding_%d", i);
@@ -429,10 +938,22 @@ void SessionDialog::IfHostExistLoadSettings(char *hostname)
 	FILE *file = fopen(buffer, "r");
 	if (strlen(hostname) != 0 && file ) {
 		fclose(file);
-		LoadFromFile(buffer);		
+		if (fname[strlen(fname) - 4] == 'j') {
+			LoadFromJson(buffer);
+
+		}
+		else {
+			LoadFromFile(buffer);
+		}
 	}
 	else
-		LoadFromFile(m_pOpt->getDefaultOptionsFileName());
+		if (fname[strlen(fname) - 4] == 'j') {
+			LoadFromJson(m_pOpt->getDefaultOptionsFileName());
+
+		}
+		else {
+			LoadFromFile(m_pOpt->getDefaultOptionsFileName());
+		}
 }
 
 void SessionDialog::SetDefaults()

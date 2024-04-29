@@ -181,6 +181,9 @@
     <ClCompile Include="Hyperlinks.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\Downloads\cJSON.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AboutBox.h">
@@ -310,6 +313,9 @@
       <Filter>header</Filter>
     </ClInclude>
     <ClInclude Include="UltraVNCHelperFunctions.h">
+      <Filter>header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\Downloads\cJSON.h">
       <Filter>header</Filter>
     </ClInclude>
   </ItemGroup>

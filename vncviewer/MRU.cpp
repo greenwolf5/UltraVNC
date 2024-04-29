@@ -1,4 +1,4 @@
-/////////////////////////////////////////////////////////////////////////////
+﻿/////////////////////////////////////////////////////////////////////////////
 //  Copyright (C) 2002-2013 UltraVNC Team Members. All Rights Reserved.
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -34,16 +34,18 @@
 #include <direct.h>
 
 static const TCHAR * INDEX_VAL_NAME = _T("index");
-static const TCHAR * RESERVED_CHARS = _T("[;");  //String of characters that will cause a key/value line to be parsed differently if set as a key
-static const TCHAR FIRST_USEABLE_ID = _T('A');
-static const TCHAR LAST_USEABLE_ID = _T('~');
-static const int MRU_MAX_ITEM_LENGTH = 256;
+static const TCHAR DEL = char(127);
+TCHAR RESERVED_CHARS[5] = _T("[;=R");  //String of characters that will cause a key/value line to be parsed differently if set as a key
+static const TCHAR FIRST_USEABLE_ID = _T('!');
+static const TCHAR LAST_USEABLE_ID = _T(~);
+static const int MRU_MAX_ITEM_LENGTH = 256; //Managed to get max length to 90. Issue is that we have 102
+
 
 MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 {
     VNCOptions::setDefaultOptionsFileName(m_optionfile);
     m_maxnum = maxnum;
-
+    RESERVED_CHARS[3] = DEL;
     // Read the index entry
     ReadIndex();
 }
@@ -82,7 +84,7 @@ void MRU::AddItem(LPTSTR txt)
     }
 
     // Find first available unused id
-    while ((_tcschr(m_index, _totupper(firstUnusedId)) != NULL || _tcschr(RESERVED_CHARS, firstUnusedId) != NULL) && _tcscmp(&firstUnusedId, &LAST_USEABLE_ID) <= 0)
+    while ((_tcschr(m_index, firstUnusedId) != NULL || _tcschr(RESERVED_CHARS, firstUnusedId) != NULL) && _tcscmp(&firstUnusedId, &LAST_USEABLE_ID) <= 0)
         firstUnusedId++;
     // If we've run out of unused ids, use the last one in the index and then remove it from the end.
     if (_tcscmp(&firstUnusedId, &LAST_USEABLE_ID) > 0) {
@@ -92,9 +94,18 @@ void MRU::AddItem(LPTSTR txt)
     
     // If we haven't found a match, then we need to create a new entry and put it
     // at the front of the index.
-    TCHAR valname[2];
+    TCHAR valname[3];
     valname[0] = firstUnusedId;
     valname[1] = _T('\0');
+    if (islower(firstUnusedId)) {
+        valname[1] = _T('1');
+        valname[2] = _T('\0');
+    }
+    else {
+        valname[1] = _T('2');
+        valname[2] = _T('\0');
+    }
+    
 	WritePrivateProfileString("connection", valname, txt, m_optionfile);    
     // move all the current ids up one
     for (int j = _tcslen(m_index) + 1; j >= 0; j--)
@@ -119,11 +130,19 @@ int MRU::GetItem(int index, LPTSTR buf, int buflen)
 {
     if (index > NumItems() - 1) 
 		return 0;
-    TCHAR valname[2];
+    TCHAR valname[3];
     valname[0] = m_index[index];
     valname[1] = _T('\0');
+    if (islower(valname[0])) {
+        valname[1] = _T('1');
+        valname[2] = _T('\0');
+    }
+    else {
+        valname[1] = _T('2');
+        valname[2] = _T('\0');
+    }
     DWORD dwbuflen = buflen;
-	GetPrivateProfileString("connection", valname, "",buf, buflen, m_optionfile);
+	GetPrivateProfileStringA("connection", valname, "",buf, buflen, m_optionfile);
     return _tcslen(buf);
 }
 
@@ -189,7 +208,7 @@ void MRU::RemoveItem(int index)
     TCHAR valname[2];
     valname[0] = m_index[index];
     valname[1] = _T('\0');
-	WritePrivateProfileString("connection", valname, NULL, m_optionfile);
+	WritePrivateProfileStringA("connection", valname, NULL, m_optionfile);
 
     for (unsigned int i = index; i <= _tcslen(m_index); i++)
         m_index[i] = m_index[i+1];    
@@ -201,7 +220,7 @@ void MRU::ReadIndex()
 {
     // read the index
     DWORD dwindexlen = sizeof(m_index);
-	if (GetPrivateProfileString("connection", INDEX_VAL_NAME, "", m_index, dwindexlen, m_optionfile) == 0) 
+	if (GetPrivateProfileStringA("connection", INDEX_VAL_NAME, "", m_index, dwindexlen, m_optionfile) == 0) 
 		WriteIndex();
 	int size = NumItems();
 }
@@ -209,7 +228,7 @@ void MRU::ReadIndex()
 // Save the index string to the registry
 void MRU::WriteIndex()
 {
-	WritePrivateProfileString("connection", INDEX_VAL_NAME, m_index, m_optionfile);
+	WritePrivateProfileStringA("connection", INDEX_VAL_NAME, m_index, m_optionfile);
 }
 
 
