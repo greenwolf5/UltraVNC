@@ -987,7 +987,7 @@ void SessionDialog::InitDlgProcListen()
 {
 	HWND hwnd = ListenHwnd;
 	SetDlgItemInt(hwnd, IDC_LISTENPORT, listenport, FALSE);
-	SetDlgItemTextA(hwnd, IDC_IPADDRESS, m_ipAddress);
+	SetDlgItemTextA(hwnd, IDC_IPADDRESS, m_ipAddress); //ipAddress doesn't work. Not sure how to give it a value. Using m_ instead
 	SetDlgItemTextA(hwnd, IDC_MACADDRESS, m_macAddress);
 
 }
@@ -1000,7 +1000,7 @@ void SessionDialog::ReadDlgProcListen()
 	TCHAR tempValue[250];
 	HWND hwnd = ListenHwnd;
 	listenport = GetDlgItemInt(hwnd, IDC_LISTENPORT, NULL, TRUE);
-	GetDlgItemText(hwnd, IDC_MACADDRESS, ip, MAX_HOST_NAME_LEN);
+	GetDlgItemText(hwnd, IDC_IPADDRESS, ip, MAX_HOST_NAME_LEN);
 	if (ParseDisplay(ip, tempValue, MAX_HOST_NAME_LEN, &m_port)) {
 		for (size_t i = 0, len = strlen(tempValue); i < len; i++)
 			tempValue[i] = toupper(tempValue[i]);

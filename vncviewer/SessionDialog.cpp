@@ -268,6 +268,7 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDC_DELETE:
 			DeleteFile(_this->m_pOpt->getDefaultOptionsFileName());
 			_this->SetDefaults();
+			_this->InitMRU(hwnd);
 			return TRUE;
 		case IDC_SAVE:
 			_this->SaveConnection(hwnd, false);
@@ -377,6 +378,7 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				//		SendMessage(hUsePlugin, BM_SETCHECK, TRUE, 0);
 				//	}
 				//}
+
 				break;
 			}
 		// [v1.0.2-jp1 fix]

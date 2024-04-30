@@ -788,8 +788,8 @@ void SessionDialog::LoadFromJson(char* fname, HWND hwnd) {
 		strcat_s(buffer, buf);
 		SaveToFile(buffer, true);
 		m_pMRU->AddItem(m_host);
-		//InitMRU(hwnd);
-
+		InitMRU(hwnd);
+		SetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, m_alias);
 	}
 }
 void SessionDialog::LoadFromFile(char *fname)
@@ -913,8 +913,6 @@ void SessionDialog::LoadFromFile(char *fname)
 
   GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
   m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
-  GetPrivateProfileString("connection", "ipAddress", "", m_ipAddress, MAX_HOST_NAME_LEN, fname);
-  GetPrivateProfileString("connection", "macAddress", "", m_macAddress, MAX_HOST_NAME_LEN, fname);
 
 }
 
@@ -941,7 +939,6 @@ void SessionDialog::IfHostExistLoadSettings(char *hostname)
 		fclose(file);
 		if (fname[strlen(fname) - 4] == 'j') {
 			LoadFromJson(buffer);
-
 		}
 		else {
 			LoadFromFile(buffer);
@@ -991,6 +988,9 @@ void SessionDialog::SetDefaults()
 	fEnableZstd = true;
 	listening = false;
 	listenport = INCOMING_PORT_OFFSET;
+	m_ipAddress[0] = '\0';
+	m_macAddress[0] = '\0';
+	m_alias[0] = '\0';
 	restricted = false;
 	AllowUntrustedServers = false;
 	// Tight specific
@@ -1029,4 +1029,5 @@ void SessionDialog::SetDefaults()
 	SettingsToUI();
 	setdefaults = false;
 	giiEnable = false;
+
 }
