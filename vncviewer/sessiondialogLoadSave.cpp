@@ -239,7 +239,6 @@ void SessionDialog::SaveToFile(char *fname, bool asDefault)
 {
 	int ret;
 	char buf[32];
-	
 	if (!asDefault) {
 		ret = WritePrivateProfileString("connection", "host", m_host_dialog, fname);		
 		sprintf_s(buf, "%d", m_port);
@@ -1029,5 +1028,4 @@ void SessionDialog::SetDefaults()
 	SettingsToUI();
 	setdefaults = false;
 	giiEnable = false;
-
 }

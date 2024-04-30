@@ -355,7 +355,7 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			_this->m_fFromFile = true;
 			return TRUE;
 		}
-		case IDC_LOADJSON: 
+		case IDC_LOADJSON:
 			//
 			//somehow load every json into the .vnc files
 			TCHAR szFileName[MAX_PATH];
@@ -378,7 +378,6 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				//		SendMessage(hUsePlugin, BM_SETCHECK, TRUE, 0);
 				//	}
 				//}
-
 				break;
 			}
 		// [v1.0.2-jp1 fix]
