@@ -765,7 +765,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR szCmdLin
 				// This one will also read from config file if specified
 				app.NewConnection(false);
 			}
-
+			
 			try
 			{
 					while ( GetMessage(&msg, NULL, 0,0) )
