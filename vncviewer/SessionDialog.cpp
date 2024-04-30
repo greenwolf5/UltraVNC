@@ -109,6 +109,8 @@ SessionDialog::SessionDialog(VNCOptions* pOpt, ClientConnection* pCC, CDSMPlugin
 	autoReconnect = m_pOpt->m_autoReconnect;
 	FTTimeout = m_pOpt->m_FTTimeout;
 	listenport = m_pOpt->m_listenPort;
+	_tcscpy_s(ipAddress, m_pOpt->m_ipAddress);
+	_tcscpy_s(macAddress, m_pOpt->m_macAddress);
 	fEnableCache = m_pOpt->m_fEnableCache;
 	fEnableZstd = m_pOpt->m_fEnableZstd;
 	useCompressLevel = m_pOpt->m_useCompressLevel;
@@ -686,6 +688,8 @@ bool SessionDialog::connect(HWND hwnd)
 	m_pOpt->m_autoReconnect = autoReconnect;
 	m_pOpt->m_FTTimeout = FTTimeout;
 	m_pOpt->m_listenPort = listenport;
+	_tcscpy_s(m_pOpt->m_ipAddress, ipAddress);
+	_tcscpy_s(m_pOpt->m_macAddress, macAddress);
 	m_pOpt->m_fEnableCache = fEnableCache;
 	m_pOpt->m_fEnableZstd = fEnableZstd;
 	m_pOpt->m_useCompressLevel = useCompressLevel;

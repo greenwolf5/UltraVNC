@@ -913,7 +913,8 @@ void SessionDialog::LoadFromFile(char *fname)
 
   GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
   m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
-
+  GetPrivateProfileString("connection", "ipAddress", "", m_ipAddress, MAX_HOST_NAME_LEN, fname);
+  GetPrivateProfileString("connection", "macAddress", "", m_macAddress, MAX_HOST_NAME_LEN, fname);
 
 }
 

@@ -53,6 +53,8 @@ public:
 	// process options
 	bool	m_listening;
 	int     m_listenPort;
+	TCHAR	m_ipAddress[32];
+	TCHAR	m_macAddress[32];
 	bool	m_connectionSpecified;
 	bool	m_configSpecified;
 	TCHAR   m_cmdlnUser[256]; // act: add user option on command line

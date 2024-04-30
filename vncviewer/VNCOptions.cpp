@@ -203,6 +203,8 @@ VNCOptions::VNCOptions()
 	m_configFilename[0] = '\0';
 	m_listening = false;
 	m_listenPort = INCOMING_PORT_OFFSET;
+	m_ipAddress[0] = '\0';
+	m_macAddress[0] = '\0';
 	m_restricted = false;
 	m_AllowUntrustedServers = false;
 	// Tight specific
@@ -412,6 +414,8 @@ VNCOptions& VNCOptions::operator=(VNCOptions& s)
 
 	m_listening = s.m_listening;
 	m_listenPort = s.m_listenPort;
+	strcpy_s(m_ipAddress, 32, s.m_ipAddress);
+	strcpy_s(m_macAddress, 32, s.m_macAddress);
 	m_restricted = s.m_restricted;
 	m_AllowUntrustedServers = s.m_AllowUntrustedServers;
 
@@ -1198,6 +1202,8 @@ void VNCOptions::SaveOptions(char* fname)
 	WritePrivateProfileString("options", "prefix", m_prefix, fname);
 	WritePrivateProfileString("options", "imageFormat", m_imageFormat, fname);
 	WritePrivateProfileString("options", "InfoMsg", m_InfoMsg, fname);
+	WritePrivateProfileStringA("connection", "ipAddress", m_ipAddress, fname);
+	WritePrivateProfileStringA("connection", "macAddress", m_macAddress, fname);
 	saveInt("AutoReconnect", m_autoReconnect, fname);
 
 	saveInt("ExitCheck", m_fExitCheck, fname); //PGM @ Advantig
@@ -1303,6 +1309,9 @@ void VNCOptions::LoadOptions(char* fname)
 	m_fExitCheck = readInt("ExitCheck", m_fExitCheck, fname) != 0; //PGM @ Advantig
 	m_FTTimeout = readInt("FileTransferTimeout", m_FTTimeout, fname);
 	m_listenPort = readInt("ListenPort", m_listenPort, fname);
+	GetPrivateProfileString("connection", "ipAddress", m_ipAddress, m_ipAddress, 32, fname);
+	GetPrivateProfileString("connection", "macAddress", m_macAddress, m_macAddress, 32, fname);
+
 	if (m_FTTimeout > 600)
 		m_FTTimeout = 600; // cap at 1 minute
 

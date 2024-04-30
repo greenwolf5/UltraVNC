@@ -987,7 +987,9 @@ void SessionDialog::InitDlgProcListen()
 {
 	HWND hwnd = ListenHwnd;
 	SetDlgItemInt(hwnd, IDC_LISTENPORT, listenport, FALSE);
-	
+	SetDlgItemTextA(hwnd, IDC_IPADDRESS, m_ipAddress);
+	SetDlgItemTextA(hwnd, IDC_MACADDRESS, m_macAddress);
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -1554,6 +1556,8 @@ void SessionDialog::StartListener()
 	m_pOpt->m_autoReconnect = autoReconnect;
 	m_pOpt->m_FTTimeout = FTTimeout;
 	m_pOpt->m_listenPort = listenport;
+	_tcscpy_s(m_pOpt->m_ipAddress, ipAddress);
+	_tcscpy_s(m_pOpt->m_macAddress, macAddress);
 	m_pOpt->m_fEnableCache = fEnableCache;
 	m_pOpt->m_fEnableZstd = fEnableZstd;
 	m_pOpt->m_useCompressLevel = useCompressLevel;
