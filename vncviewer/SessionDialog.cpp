@@ -276,6 +276,9 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDC_SAVEAS:
 			_this->SaveConnection(hwnd, true);
 			break;
+		case IDC_SAVEJSON:
+			_this->MakeJson(true);
+			break;
 		case IDCONNECT:
 			_this->InitTab(hwnd);
 			return _this->connect(hwnd);

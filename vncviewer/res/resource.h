@@ -318,6 +318,7 @@
 #define IDC_SAVEASDEFAULT               2047
 #define IDC_BUTTON_EXPAND               2048
 #define IDC_ZSTD                        2049
+#define IDC_SAVEJSON					2050
 #define IDC_LINE1                       2053
 #define IDC_LINE2                       2054
 #define IDC_SLIDERRES                   2054

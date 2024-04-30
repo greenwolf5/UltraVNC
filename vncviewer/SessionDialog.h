@@ -162,6 +162,7 @@ public:
     void SaveToFile(char* fname, bool SaveToFile = false);// , bool saveJson = true);
     void saveInt(char *name, int value, char *fname); 
     void LoadFromJson(char* fname, HWND hwnd = NULL);
+    void MakeJson(bool asDefault);
     void LoadFromFile(char *fname);
     int readInt(char *name, int defval, char *fname);
     void getAppData(char * buffer);

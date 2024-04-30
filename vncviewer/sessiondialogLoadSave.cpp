@@ -337,36 +337,40 @@ void SessionDialog::SaveToFile(char *fname, bool asDefault)
 
 	
 	if (!asDefault) {
-		cJSON* json = cJSON_CreateObject();
-		cJSON* arrayObject = cJSON_CreateArray();
-		FILE* fp = fopen("TestFile.json", "w");
-
-
-		DIR* d;
-		struct dirent* dir;
-		char buffer[_MAX_PATH];
-		char directory[_MAX_PATH];
-		getAppData(buffer);
-		strcat_s(buffer, "\\UltraVNC\\");
-		d = opendir(buffer);
-		if (d) {
-			while ((dir = readdir(d)) != NULL) {
-				char temp[1000];
-				strcpy(temp, dir->d_name);
-				strcpy(directory, buffer);
-				strcat_s(directory, temp);
-				if (dir->d_type == DT_REG)
-				{
-
-					LoadFromFile(directory);
-					cJSON_AddItemToArray(arrayObject, SaveToJson(directory, asDefault));
-				}
-			}
-			closedir(d);
-		}
-		fputs(cJSON_Print(arrayObject), fp);
-		fclose(fp);
+		MakeJson(asDefault);
 	}
+}
+
+void SessionDialog::MakeJson(bool asDefault) {
+	cJSON* json = cJSON_CreateObject();
+	cJSON* arrayObject = cJSON_CreateArray();
+	FILE* fp = fopen("ComputerList.json", "w");
+
+
+	DIR* d;
+	struct dirent* dir;
+	char buffer[_MAX_PATH];
+	char directory[_MAX_PATH];
+	getAppData(buffer);
+	strcat_s(buffer, "\\UltraVNC\\");
+	d = opendir(buffer);
+	if (d) {
+		while ((dir = readdir(d)) != NULL) {
+			char temp[1000];
+			strcpy(temp, dir->d_name);
+			strcpy(directory, buffer);
+			strcat_s(directory, temp);
+			if (dir->d_type == DT_REG)
+			{
+
+				LoadFromFile(directory);
+				cJSON_AddItemToArray(arrayObject, SaveToJson(directory, asDefault));
+			}
+		}
+		closedir(d);
+	}
+	fputs(cJSON_Print(arrayObject), fp);
+	fclose(fp);
 }
 void SessionDialog::LoadFromJson(char* fname, HWND hwnd) {
 	FILE* jsonFile = fopen(fname, "r");
