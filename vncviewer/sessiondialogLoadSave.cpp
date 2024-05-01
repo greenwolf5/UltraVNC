@@ -796,7 +796,9 @@ void SessionDialog::LoadFromJson(char* fname, HWND hwnd) {
 		SaveToFile(buffer, true);
 		m_pMRU->AddItem(m_host);
 		InitMRU(hwnd);
+		SettingsToUI();
 		SetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, m_alias);
+		SetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, m_host);
 	}
 }
 void SessionDialog::LoadFromFile(char *fname)
