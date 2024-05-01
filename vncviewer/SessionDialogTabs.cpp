@@ -1000,7 +1000,7 @@ void SessionDialog::ReadDlgProcListen()
 	TCHAR tempValue[250];
 	HWND hwnd = ListenHwnd;
 	listenport = GetDlgItemInt(hwnd, IDC_LISTENPORT, NULL, TRUE);
-	GetDlgItemText(hwnd, IDC_IPADDRESS, ip, MAX_HOST_NAME_LEN);
+	/*GetDlgItemText(hwnd, IDC_IPADDRESS, ip, MAX_HOST_NAME_LEN);
 	if (ParseDisplay(ip, tempValue, MAX_HOST_NAME_LEN, &m_port)) {
 		for (size_t i = 0, len = strlen(tempValue); i < len; i++)
 			tempValue[i] = toupper(tempValue[i]);
@@ -1012,7 +1012,7 @@ void SessionDialog::ReadDlgProcListen()
 		for (size_t i = 0, len = strlen(tempValue); i < len; i++)
 			tempValue[i] = toupper(tempValue[i]);
 		_tcscpy_s(m_macAddress, tempValue);
-	}
+	}*/
 }
 ////////////////////////////////////////////////////////////////////////////////
 void SessionDialog::ReadDlgProcEncoders()

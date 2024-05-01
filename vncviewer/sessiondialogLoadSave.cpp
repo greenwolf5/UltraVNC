@@ -128,19 +128,19 @@ int SessionDialog::readInt(char *name, int defval, char *fname)
   return GetPrivateProfileInt("options", name, defval, fname);
 }
 
-struct cJSON* SessionDialog::SaveToJson(char* fname, bool asDefault) {
+struct cJSON* SessionDialog::SaveToJson(char* fname) {
 	char buf[32];
 
 
 	cJSON* json = cJSON_CreateObject();
 
-	if (!asDefault) {
+	/*if (!asDefault) {*/
 		cJSON_AddStringToObject(json, "host", m_host);
 		sprintf_s(buf, "%d", m_port);
 		cJSON_AddNumberToObject(json, "port", atoi(buf));
-	}
+/*	}
 	else
-		SettingsFromUI(); //TODO: make this compatibile properly
+		SettingsFromUI();*/ //TODO: make this compatibile properly
 	cJSON_AddStringToObject(json, "proxyhost", m_proxyhost);
 	sprintf_s(buf, "%d", m_proxyport);
 	cJSON_AddNumberToObject(json, "proxyport", atoi(buf));
@@ -344,7 +344,6 @@ void SessionDialog::SaveToFile(char *fname, bool asDefault)
 void SessionDialog::MakeJson(bool asDefault) {
 	cJSON* json = cJSON_CreateObject();
 	cJSON* arrayObject = cJSON_CreateArray();
-	FILE* fp = fopen("ComputerList.json", "w");
 
 
 	DIR* d;
@@ -354,17 +353,22 @@ void SessionDialog::MakeJson(bool asDefault) {
 	getAppData(buffer);
 	strcat_s(buffer, "\\UltraVNC\\");
 	d = opendir(buffer);
+	char ComputerList[_MAX_PATH];
+	memset(ComputerList, '\0', _MAX_PATH);
+	strcat_s(ComputerList, buffer);
+	strcat_s(ComputerList, "ComputerList.json");
+	FILE* fp = fopen(ComputerList, "w");
 	if (d) {
 		while ((dir = readdir(d)) != NULL) {
 			char temp[1000];
 			strcpy(temp, dir->d_name);
 			strcpy(directory, buffer);
 			strcat_s(directory, temp);
-			if (dir->d_type == DT_REG)
+			if (dir->d_type == DT_REG && temp[strlen(temp) - 1] != 'n')
 			{
 
 				LoadFromFile(directory);
-				cJSON_AddItemToArray(arrayObject, SaveToJson(directory, asDefault));
+				cJSON_AddItemToArray(arrayObject, SaveToJson(directory));
 			}
 		}
 		closedir(d);
@@ -601,7 +605,7 @@ void SessionDialog::LoadFromJson(char* fname, HWND hwnd) {
 		if ((requestShapeUpdatesJ != NULL)) {
 			requestShapeUpdates = requestShapeUpdatesJ->valueint != 0;
 		}
-		cJSON* ignoreShapeUpdatesJ = cJSON_GetObjectItemCaseSensitive(json, "noremovecursor");
+		cJSON* ignoreShapeUpdatesJ = cJSON_GetObjectItemCaseSensitive(json, "noremotecursor");
 		if ((ignoreShapeUpdatesJ != NULL)) {
 			ignoreShapeUpdates = ignoreShapeUpdatesJ->valueint != 0;
 		}
@@ -802,9 +806,9 @@ void SessionDialog::LoadFromFile(char *fname)
 	
 	//memset(m_host, 0, 250);
 	//memset(m_proxyhost, 0, 250);
-		GetPrivateProfileString("connection", "host", "", test, MAX_HOST_NAME_LEN, fname);
-		strcpy(m_host, test);
-		int tempInt;
+		GetPrivateProfileString("connection", "host", "", m_host, MAX_HOST_NAME_LEN, fname);
+		//strcpy(m_host, test);
+		//int tempInt;
 		if ((m_port = GetPrivateProfileInt("connection", "port", 0, fname)) == 0)
 
 	GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
@@ -914,8 +918,8 @@ void SessionDialog::LoadFromFile(char *fname)
   fRequireEncryption = readInt("RequireEncryption", (int)fRequireEncryption, fname) ? true : false;
   preemptiveUpdates = readInt("PreemptiveUpdates", (int)preemptiveUpdates, fname) ? true : false;
 
-  GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
-  m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
+  //GetPrivateProfileString("connection", "proxyhost", "", m_proxyhost, MAX_HOST_NAME_LEN, fname);
+  //m_proxyport = GetPrivateProfileInt("connection", "proxyport", 0, fname);
 
 }
 

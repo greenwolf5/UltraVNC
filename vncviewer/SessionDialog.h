@@ -158,7 +158,7 @@ public:
     void SaveConnection(HWND hwnd, bool saveAs);
     void SettingsFromUI();
     void SettingsToUI(bool initMruNeeded = true);
-    struct cJSON* SaveToJson(char* fname, bool SaveToFile = false);
+    struct cJSON* SaveToJson(char* fname);
     void SaveToFile(char* fname, bool SaveToFile = false);// , bool saveJson = true);
     void saveInt(char *name, int value, char *fname); 
     void LoadFromJson(char* fname, HWND hwnd = NULL);
