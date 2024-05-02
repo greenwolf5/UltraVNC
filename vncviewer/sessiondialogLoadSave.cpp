@@ -972,7 +972,7 @@ void SessionDialog::SetDefaults()
 	SaveSize = false;
 	GNOME = false;
 	Directx = false;
-	autoDetect = false;
+	autoDetect = true;
 	Use8Bit = rfbPFFullColors; //false;
 	ShowToolbar = true;
 	NoStatus = false;
