@@ -35,6 +35,7 @@
 #include <windows.h>
 #include <tchar.h>
 #include "VNCOptions.h"
+#include <cJSON.h>
 
 class MRU  
 {
@@ -50,8 +51,18 @@ public:
     // list longer than the maximum, older ones are deleted.
     void AddItem(LPTSTR txt);
 
+    void WriteToOptionFile(cJSON* jsonParse);
+
+    cJSON* OpenJson();
+
+    void IncrementList(int index, cJSON* jsonParse);
+
     // How many items are on the list?
     int NumItems();
+
+    cJSON* GetValue(int index, cJSON* json);
+
+    bool GetItem(int index, LPTSTR txt, cJSON* json);
 
     // Return them in order. 0 is the newest.
     // NumItems()-1 is the oldest.

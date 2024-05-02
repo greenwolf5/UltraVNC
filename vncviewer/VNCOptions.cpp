@@ -267,7 +267,7 @@ void VNCOptions::setDefaultOptionsFileName(TCHAR * optionfile)
 		char* p = strrchr(szFileName, '\\');
 		if (p == NULL) return;
 		*p = '\0';
-		strcat_s(szFileName, "\\options.vnc");
+		strcat_s(szFileName, "\\options.json");
 	}
 	HANDLE m_hDestFile = CreateFile(szFileName, GENERIC_WRITE | GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 	bool fAlreadyExists = (GetLastError() == ERROR_ALREADY_EXISTS);
@@ -296,7 +296,7 @@ void VNCOptions::setDefaultOptionsFileName(TCHAR * optionfile)
 		else
 			strcpy_s(optionfile, MAX_PATH, "");
 	}
-	strcat_s(optionfile, MAX_PATH, "\\options.vnc");
+	strcat_s(optionfile, MAX_PATH, "\\options.json");
 }
 
 TCHAR* VNCOptions::getDefaultOptionsFileName()

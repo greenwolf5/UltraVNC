@@ -33,21 +33,26 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <direct.h>
+#include <cJSON.h>
 
 static const TCHAR * INDEX_VAL_NAME = _T("index");
 static const TCHAR DEL = char(127);
 TCHAR RESERVED_CHARS[5] = _T("[;=");  //String of characters that will cause a key/value line to be parsed differently if set as a key
-static const TCHAR FIRST_USEABLE_ID = _T('!');
-static const TCHAR LAST_USEABLE_ID = _T('~');
-static const int MRU_MAX_ITEM_LENGTH = 256; //Managed to get max length to 90. Issue is that we have 102
+static const int FIRST_USEABLE_ID = 0;//_T('!');
+static const int LAST_USEABLE_ID = 256;//_T('~');
+static const int MRU_MAX_ITEM_LENGTH = 256; //Managed to get max length to 90. Issue is that we have 101
+static const char* optionFile = "";
+char buffer[4096];
+//cJSON* jsonParse;
 
 
 MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 {
     VNCOptions::setDefaultOptionsFileName(m_optionfile);
+    optionFile = m_optionfile;
     m_maxnum = maxnum;
     // Read the index entry
-    ReadIndex();
+    //ReadIndex();
 }
 
 // Add the item specified at the front of the list
@@ -55,180 +60,243 @@ MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 // list longer than the maximum, older ones are deleted.
 
 void ofnInit();
-void MRU::AddItem(LPTSTR txt) 
+void MRU::AddItem(LPTSTR txt)
 {
-	// We don't add empty items.
-	if (_tcslen(txt) == 0) 
-		return;
+    // We don't add empty items.
+    if (_tcslen(txt) == 0)
+        return;
     // Read each value in index,
     // noting which is the first unused id
-    TCHAR id = _T('\0');
-    TCHAR firstUnusedId = FIRST_USEABLE_ID;
-    TCHAR itembuf[MRU_MAX_ITEM_LENGTH+1];
+    int id = 0;
+    int firstUnusedId = FIRST_USEABLE_ID;
+    TCHAR itembuf[MRU_MAX_ITEM_LENGTH + 1];
 
-    // Scan through the index
-    for (int i = 0; i < (int)_tcslen(m_index); i++) {
-        id = m_index[i];
-        // Does this entry already contain the item we're adding
-        if (GetItem(i, itembuf, MRU_MAX_ITEM_LENGTH) != 0) {           
-            // If a value matches the txt specified, move it to the front.
-            if (_tcscmp(itembuf, txt) == 0) {
-                for (int j = i; j > 0; j--)
-                    m_index[j] = m_index[j-1];
-                m_index[0] = id;
-                WriteIndex();
-                // That's all we need to do.
-                return;
-            }
+    cJSON* jsonParse = OpenJson();
+    int i;
+    cJSON* json;
+    int n = cJSON_GetArraySize(jsonParse);
+    for (i = 0; i < n; i++) {
+        json = cJSON_GetArrayItem(jsonParse, i);
+        if(GetItem(i,txt,json)) {
+            cJSON* placeHolderValue;
+            char strIndex[256];
+            sprintf(strIndex, "%d", i);
+            cJSON* placeHolder = cJSON_GetArrayItem(jsonParse, i);
+            cJSON_ReplaceItemInArray(jsonParse, i, new cJSON);
+            cJSON_InsertItemInArray(jsonParse, 0, placeHolder);
+            WriteToOptionFile(jsonParse);
+            return;
+        }
+        
+    }
+    cJSON* tempObject = cJSON_CreateObject();
+    char strIndex[256];
+    sprintf(strIndex, "%d", n);
+    cJSON_AddStringToObject(tempObject, strIndex, txt);
+    cJSON_InsertItemInArray(jsonParse, 0, tempObject);
+    WriteToOptionFile(jsonParse);
+    
+}
+void MRU::WriteToOptionFile(cJSON* jsonParse) {
+    FILE* fp = fopen(m_optionfile, "w");
+    char* test = cJSON_Print(jsonParse);
+    fputs(test, fp);
+    fclose(fp);
+}
+cJSON* MRU::OpenJson() {
+    FILE* jsonFile = fopen(m_optionfile, "r");
+    if (jsonFile == NULL) {
+        VNCOptions::setDefaultOptionsFileName(m_optionfile);
+        jsonFile = fopen(m_optionfile, "r");
+    }
+    memset(buffer, '\0', 4096);
+    int len = fread(buffer, 1, sizeof(buffer), jsonFile);
+    fclose(jsonFile);
+
+    cJSON* jsonParse2 = cJSON_Parse(buffer);
+
+
+    if (jsonFile == NULL) {
+        const char* error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL) {
+            printf("Error: %s\n", error_ptr);
         }
     }
+    if (jsonParse2 != NULL) {
+        return jsonParse2;
 
-    // Find first available unused id
-    while ((_tcschr(m_index, firstUnusedId) != NULL || _tcschr(RESERVED_CHARS, firstUnusedId) != NULL) && _tcscmp(&firstUnusedId, &LAST_USEABLE_ID) <= 0)
-        firstUnusedId++;
-    // If we've run out of unused ids, use the last one in the index and then remove it from the end.
-    if (_tcscmp(&firstUnusedId, &LAST_USEABLE_ID) > 0) {
-        firstUnusedId = id;
-        m_index[_tcslen(m_index) - 1] = _T('\0');    
-    }
-    
-    // If we haven't found a match, then we need to create a new entry and put it
-    // at the front of the index.
-    TCHAR valname[3];
-    valname[0] = firstUnusedId;
-    valname[1] = _T('\0');
-    if (islower(firstUnusedId)) {
-        valname[1] = _T('1');
-        valname[2] = _T('\0');
     }
     else {
-        valname[1] = _T('2');
-        valname[2] = _T('\0');
+        cJSON* array = cJSON_CreateArray();
+
+        return array;
+    }
+}
+
+void MRU::IncrementList(int index, cJSON* jsonParse) 
+{
+    int i;
+    cJSON json;
+    if (index != 0) {
+        char* test = cJSON_GetStringValue(cJSON_GetArrayItem(jsonParse, index-1));
+        cJSON* test2 = cJSON_GetArrayItem(jsonParse, index-2);
+        cJSON_InsertItemInArray(jsonParse, 0, cJSON_GetArrayItem(jsonParse, index + 1));
+        for (i = index; i > 0; i--) {
+            char* test = cJSON_GetStringValue(cJSON_GetArrayItem(jsonParse, i + 1));
+            cJSON_InsertItemInArray(jsonParse, 0, cJSON_GetArrayItem(jsonParse, i + 1));
+        }
     }
     
-	WritePrivateProfileString("connection", valname, txt, m_optionfile);    
-    // move all the current ids up one
-    for (int j = _tcslen(m_index) + 1; j >= 0; j--)
-        m_index[j] = m_index[j-1];
-	m_index[MRU_MAX_ITEM_LENGTH] = _T('\0');
-    // and insert this one at the front
-    m_index[0] = firstUnusedId;
-    WriteIndex();
 }
 
 // How many items are on the list?
 int MRU::NumItems()
 {
-    // return the length of index
-    return _tcslen(m_index);
+    cJSON* json;
+    int i;
+    int n = cJSON_GetArraySize(OpenJson());
+    return n;
 }
 
+cJSON* MRU::GetValue(int index, cJSON* json) {
+    char strIndex[256];
+    sprintf(strIndex, "%d", index);
+    cJSON* array = cJSON_GetArrayItem(json, index);
+    cJSON* value = json->child;//cJSON_GetObjectItem(json,strIndex);
+    return value;
+}
 // Return them in order. 0 is the newest.
-// NumItems()-1 is the oldest.
-// Returns length, or 0 if unsuccessful.
-int MRU::GetItem(int index, LPTSTR buf, int buflen)
+bool MRU::GetItem(int index, LPTSTR txt, cJSON* json)
 {
-    if (index > NumItems() - 1) 
-		return 0;
-    TCHAR valname[3];
-    valname[0] = m_index[index];
-    valname[1] = _T('\0');
-    if (islower(valname[0])) {
-        valname[1] = _T('1');
-        valname[2] = _T('\0');
+    char placeHolder[256];
+    cJSON* value = GetValue(index, json);
+    if (cJSON_IsString(value) && (value->valuestring != NULL)) {
+        strcpy(placeHolder, value->valuestring);
+        //for (int i = 0; i < strlen(value->valuestring); i++) {
+        //    placeHolder[i] = value->valuestring[i];
+        //}
+        //placeHolder[strlen(value->valuestring)] = '\0';
+    }
+    if (!strcmp(placeHolder, txt)) 
+    {
+        return true;
     }
     else {
-        valname[1] = _T('2');
-        valname[2] = _T('\0');
+        return false;
     }
-    DWORD dwbuflen = buflen;
-	GetPrivateProfileString("connection", valname, "",buf, buflen, m_optionfile);
-    return _tcslen(buf);
+}
+int MRU::GetItem(int index, LPTSTR buf, int buflen)
+{
+    cJSON* jsonParse = OpenJson();
+    if (jsonParse->child != NULL) {
+        char* test = cJSON_GetStringValue(cJSON_GetArrayItem(jsonParse, index)->child);
+        cJSON* test3 = cJSON_GetArrayItem(jsonParse, index);
+        char* test2 = cJSON_Print(cJSON_GetArrayItem(jsonParse, index));
+        if (test == NULL) {
+            return 0;
+        }
+        else {
+            strcpy(buf, test);
+            return _tcslen(test);
+        }
+    }
 }
 
 // Remove the specified item if it exists.
 // Only one copy will be removed, but nothing should occur more than once.
 void MRU::RemoveItem(LPTSTR txt)
 {
-    TCHAR itembuf[MRU_MAX_ITEM_LENGTH+1];
-
-    for (int i = 0; i < NumItems(); i++) {
-        GetItem(i, itembuf, MRU_MAX_ITEM_LENGTH);
-        if (_tcscmp(itembuf, txt) == 0) {
-            RemoveItem(i);
-            break;
+    cJSON* jsonParse = OpenJson();
+    int i;
+    cJSON* json;
+    int n = cJSON_GetArraySize(OpenJson());
+    for (i = 0; i < n; i++) {
+        json = cJSON_GetArrayItem(jsonParse, i);
+        if (GetItem(i, txt, json))
+        {
+            cJSON* nextValue = cJSON_GetArrayItem(jsonParse, i+1);
+            cJSON* prevValue = cJSON_GetArrayItem(jsonParse, i - 1);
+            cJSON* lastValue = cJSON_GetArrayItem(jsonParse, cJSON_GetArraySize(jsonParse)-1);
+            if (nextValue != NULL)
+            {
+                nextValue->prev = prevValue;
+            }
+            if(prevValue != NULL)
+            {
+                prevValue->next = nextValue;
+            }
+            while(strcmp(prevValue->child->valuestring,lastValue->child->valuestring)) 
+            {
+                int k = atoi(prevValue->child->string);
+                //char strIndex[4];
+                sprintf(prevValue->child->string, "%d", k-1);
+                //prevValue->child->string = strIndex;
+                prevValue = prevValue->prev;
+                char* debugString = cJSON_Print(jsonParse);
+            }
+            n--;
         }
     }
-
+    WriteToOptionFile(jsonParse);
 }
 
 void MRU::SetPos(LPTSTR txt, int x, int y, int w, int h)
 {
 	char buf[32];
 	sprintf_s(buf, "%d", x);
-	WritePrivateProfileString(txt, "x", buf, m_optionfile);
+	//WritePrivateProfileString(txt, "x", buf, m_optionfile);
 	sprintf_s(buf, "%d", y);
-	WritePrivateProfileString(txt, "y", buf, m_optionfile);
+	//WritePrivateProfileString(txt, "y", buf, m_optionfile);
 	sprintf_s(buf, "%d", w);
-	WritePrivateProfileString(txt, "w", buf, m_optionfile);
+	//WritePrivateProfileString(txt, "w", buf, m_optionfile);
 	sprintf_s(buf, "%d", h);
-	WritePrivateProfileString(txt, "h", buf, m_optionfile);
+	//WritePrivateProfileString(txt, "h", buf, m_optionfile);
 }
 
 int MRU::Get_x(LPTSTR txt)
 {
 	char buf[32];
-	GetPrivateProfileString(txt, "x", "", buf, 32, m_optionfile);
+	//GetPrivateProfileString(txt, "x", "", buf, 32, m_optionfile);
 	return atoi(buf);
 }
 
 int MRU::Get_y(LPTSTR txt)
 {
 	char buf[32];
-	GetPrivateProfileString(txt, "y", "", buf, 32, m_optionfile);
+	//GetPrivateProfileString(txt, "y", "", buf, 32, m_optionfile);
 	return atoi(buf);
 }
 int MRU::Get_w(LPTSTR txt)
 {
 	char buf[32];
-	GetPrivateProfileString(txt, "w", "", buf, 32, m_optionfile);
+	//GetPrivateProfileString(txt, "w", "", buf, 32, m_optionfile);
 	return atoi(buf);
 }
 int MRU::Get_h(LPTSTR txt)
 {
 	char buf[32];
-	GetPrivateProfileString(txt, "h", "", buf, 32, m_optionfile);
+	//GetPrivateProfileString(txt, "h", "", buf, 32, m_optionfile);
 	return atoi(buf);
 }
 // Remove the item with the given index.
 // If this is greater than NumItems()-1 it will be ignored.
 void MRU::RemoveItem(int index)
 {
-    if (index > NumItems()-1) return;
-    TCHAR valname[2];
-    valname[0] = m_index[index];
-    valname[1] = _T('\0');
-	WritePrivateProfileString("connection", valname, NULL, m_optionfile);
-
-    for (unsigned int i = index; i <= _tcslen(m_index); i++)
-        m_index[i] = m_index[i+1];    
-    WriteIndex();
+    cJSON* jsonParse = OpenJson();
+    cJSON_ReplaceItemInArray(jsonParse, index, new cJSON());
 }
 
-// Load the index string from the registry
+// Since we're doing linked list- always reading first item.
 void MRU::ReadIndex()
 {
-    // read the index
     DWORD dwindexlen = sizeof(m_index);
-	if (GetPrivateProfileString("connection", INDEX_VAL_NAME, "", m_index, dwindexlen, m_optionfile) == 0) 
-		WriteIndex();
-	int size = NumItems();
+    int size = 0;//NumItems();
 }
 
-// Save the index string to the registry
+// Index idea has been deleted. Can remove this later
 void MRU::WriteIndex()
 {
-	WritePrivateProfileString("connection", INDEX_VAL_NAME, m_index, m_optionfile);
+	//WritePrivateProfileString("connection", INDEX_VAL_NAME, m_index, m_optionfile);
 }
 
 

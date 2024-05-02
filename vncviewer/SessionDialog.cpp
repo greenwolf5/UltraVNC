@@ -254,6 +254,7 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				_this->m_pMRU->AddItem(hostname);
 				_this->IfHostExistLoadSettings(hostname);
 				_this->SettingsToUI(false);
+				_this->InitMRU(hwnd);
 			}
 			if (HIWORD(wParam) == CBN_SELENDOK) {
 				TCHAR hostname[256];
