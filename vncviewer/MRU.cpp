@@ -49,7 +49,6 @@ char buffer[4096];
 MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 {
     VNCOptions::setDefaultOptionsFileName(m_optionfile);
-    optionFile = m_optionfile;
     m_maxnum = maxnum;
     // Read the index entry
     //ReadIndex();
@@ -214,6 +213,13 @@ void MRU::RemoveItem(LPTSTR txt)
         json = cJSON_GetArrayItem(jsonParse, i);
         if (GetItem(i, txt, json))
         {
+            if (i == 0) {
+                cJSON* secondItem = cJSON_GetArrayItem(jsonParse, i + 1);
+                cJSON* lastValue = cJSON_GetArrayItem(jsonParse, cJSON_GetArraySize(jsonParse) - 1);
+                jsonParse->child = secondItem;
+                WriteToOptionFile(jsonParse);
+                return;
+            }
             cJSON* nextValue = cJSON_GetArrayItem(jsonParse, i+1);
             cJSON* prevValue = cJSON_GetArrayItem(jsonParse, i - 1);
             cJSON* lastValue = cJSON_GetArrayItem(jsonParse, cJSON_GetArraySize(jsonParse)-1);
@@ -225,14 +231,14 @@ void MRU::RemoveItem(LPTSTR txt)
             {
                 prevValue->next = nextValue;
             }
-            while(strcmp(prevValue->child->valuestring,lastValue->child->valuestring)) 
+            while(prevValue != NULL && strcmp(prevValue->child->valuestring,lastValue->child->valuestring)) 
             {
                 int k = atoi(prevValue->child->string);
                 //char strIndex[4];
                 sprintf(prevValue->child->string, "%d", k-1);
                 //prevValue->child->string = strIndex;
                 prevValue = prevValue->prev;
-                char* debugString = cJSON_Print(jsonParse);
+                //char* debugString = cJSON_Print(jsonParse);
             }
             n--;
         }

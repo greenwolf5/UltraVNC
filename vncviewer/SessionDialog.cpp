@@ -250,11 +250,11 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				TCHAR hostname[256];
 				int ItemIndex = SendMessage((HWND)lParam, CB_GETCURSEL, 0, 0);
 				SendMessage((HWND)lParam, (UINT)CB_GETLBTEXT, (WPARAM)ItemIndex, (LPARAM)hostname);
-				_this->m_pMRU->RemoveItem(hostname);
-				_this->m_pMRU->AddItem(hostname);
+				/*_this->m_pMRU->RemoveItem(hostname);
+				_this->m_pMRU->AddItem(hostname);*/
 				_this->IfHostExistLoadSettings(hostname);
 				_this->SettingsToUI(false);
-				_this->InitMRU(hwnd);
+				//_this->InitMRU(hwnd);
 			}
 			if (HIWORD(wParam) == CBN_SELENDOK) {
 				TCHAR hostname[256];
@@ -281,8 +281,12 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			_this->MakeJson(true);
 			break;
 		case IDCONNECT:
-			_this->InitTab(hwnd);
-			return _this->connect(hwnd);
+			if (true) {
+				_this->InitTab(hwnd);
+				TCHAR hostname[256];
+				GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, 256);
+				return _this->connect(hwnd);
+			}
 		case IDCANCEL:
 			EndDialog(hwnd, FALSE);
 			return TRUE;
@@ -643,10 +647,13 @@ void SessionDialog::InitMRU(HWND hwnd)
 	HWND hcombo = GetDlgItem(hwnd, IDC_HOSTNAME_EDIT);
 	TCHAR valname[256];
 	SendMessage(hcombo, CB_RESETCONTENT, 0, 0);
+	int index;
 	for (int i = 0; i < m_pMRU->NumItems(); i++) {
 		m_pMRU->GetItem(i, valname, 255);
-		if (strlen(valname) != 0)
+		if (strlen(valname) != 0) {
 			SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)valname);
+			index = i;
+		}
 	}
 	SendMessage(hcombo, CB_SETCURSEL, 0, 0);
 
@@ -813,6 +820,7 @@ bool SessionDialog::connect(HWND hwnd)
 
 	TCHAR hostname[256];
 	GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, 256);		
+	m_pMRU->RemoveItem(hostname);
 	m_pMRU->AddItem(hostname);
 	strcpy_s(m_pOpt->m_InfoMsg, 255, InfoMsg);
 	//if (m_fUseCloud)
