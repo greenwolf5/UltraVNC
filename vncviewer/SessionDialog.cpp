@@ -401,6 +401,7 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				_this->m_pMRU->RemoveItem(sel);
 				char fname[_MAX_PATH];
 				int disp = PORT_TO_DISPLAY(_this->m_port);
+				strtok(_this->m_host_dialog, " ");
 				sprintf_s(fname, "%.15s-%d.vnc", _this->m_host_dialog, (disp > 0 && disp < 100) ? disp : _this->m_port);
 				char buffer[_MAX_PATH];
 				_this->getAppData(buffer);

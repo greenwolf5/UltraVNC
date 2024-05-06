@@ -306,8 +306,14 @@ int MRU::Get_h(LPTSTR txt)
 // If this is greater than NumItems()-1 it will be ignored.
 void MRU::RemoveItem(int index)
 {
-    cJSON* jsonParse = OpenJson();
+    /*cJSON* jsonParse = OpenJson();
     cJSON_ReplaceItemInArray(jsonParse, index, new cJSON());
+    WriteToOptionFile(jsonParse);*/
+    TCHAR valname[256];
+    int buflen = 256;
+    GetItem(index, valname, buflen);
+    strtok(valname, " ");
+    RemoveItem(valname);
 }
 
 // Since we're doing linked list- always reading first item.
