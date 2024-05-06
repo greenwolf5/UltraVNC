@@ -283,8 +283,9 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case IDCONNECT:
 			if (true) {
 				_this->InitTab(hwnd);
-				TCHAR hostname[256];
-				GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, 256);
+				GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, _this->m_host_dialog, 256);
+				char *placeholder = strtok(_this->m_host_dialog, " ");
+				strcpy(_this->m_host_dialog, placeholder);
 				return _this->connect(hwnd);
 			}
 		case IDCANCEL:
@@ -339,6 +340,8 @@ BOOL CALLBACK SessDlgProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					_snprintf_s(szHost, 250, TEXT("%s::%d"), _this->m_pCC->m_host, _this->m_pCC->m_port);
 
 				SetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, szHost);
+		/*		char* placeholder = strtok(szHost, " ");
+				strcpy(szHost, placeholder);*/
 				//AaronP
 				HWND hPlugins = GetDlgItem(hwnd, IDC_PLUGINS_COMBO);
 				if (strcmp(_this->szDSMPluginFilename, "") != 0 && _this->fUseDSMPlugin) {
@@ -597,6 +600,8 @@ void SessionDialog::InitDlgProc(bool loadhost, bool initMruNeeded)
 			else
 				_snprintf_s(szHost, 250, TEXT("%s::%d"), m_pCC->m_host, m_pCC->m_port);
 			SetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, szHost);
+			//char* placeholder = strtok(szHost, " ");
+			//strcpy(szHost, placeholder);
 		}
 		else if (initMruNeeded)
 			InitMRU(hwnd);
@@ -647,12 +652,10 @@ void SessionDialog::InitMRU(HWND hwnd)
 	HWND hcombo = GetDlgItem(hwnd, IDC_HOSTNAME_EDIT);
 	TCHAR valname[256];
 	SendMessage(hcombo, CB_RESETCONTENT, 0, 0);
-	int index;
 	for (int i = 0; i < m_pMRU->NumItems(); i++) {
 		m_pMRU->GetItem(i, valname, 255);
 		if (strlen(valname) != 0) {
 			SendMessage(hcombo, CB_ADDSTRING, 0, (LPARAM)valname);
-			index = i;
 		}
 	}
 	SendMessage(hcombo, CB_SETCURSEL, 0, 0);
@@ -810,18 +813,23 @@ bool SessionDialog::connect(HWND hwnd)
 	int disp = PORT_TO_DISPLAY(m_port);
 	char buffer[_MAX_PATH];
 
-	sprintf_s(fname, "%.15s-%d.vnc", m_host_dialog, (disp > 0 && disp < 100) ? disp : m_port);
+	TCHAR hostname[256];
+	GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, 256);
+	char* placeholder = strtok(hostname, " ");
+	strcpy(hostname, placeholder);
+
+	sprintf_s(fname, "%.15s-%d.vnc", hostname, (disp > 0 && disp < 100) ? disp : m_port);
 	getAppData(buffer);
 	strcat_s(buffer, "\\UltraVNC");
 	_mkdir(buffer);
 	strcat_s(buffer, "\\");
 	strcat_s(buffer, fname);
-	SaveToFile(buffer);
+	SaveToFile(buffer);//Due to me saving the file and loading all of the files in order to save easier, it loads the wrong Alias
+	GetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, m_alias, 256);
 
-	TCHAR hostname[256];
-	GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, 256);		
+			
 	m_pMRU->RemoveItem(hostname);
-	m_pMRU->AddItem(hostname);
+	m_pMRU->AddItem(hostname, m_alias);
 	strcpy_s(m_pOpt->m_InfoMsg, 255, InfoMsg);
 	//if (m_fUseCloud)
 	//	strcpy_s(hostname, "127.0.0.1:5953");

@@ -49,7 +49,7 @@ public:
     // Add the item specified at the front of the list
     // Move it there if not already. If this makes the
     // list longer than the maximum, older ones are deleted.
-    void AddItem(LPTSTR txt);
+    void AddItem(LPTSTR txt, LPTSTR alias);
 
     void WriteToOptionFile(cJSON* jsonParse);
 

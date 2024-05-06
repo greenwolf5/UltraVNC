@@ -1017,6 +1017,7 @@ void SessionDialog::ReadDlgProcListen()
 ////////////////////////////////////////////////////////////////////////////////
 void SessionDialog::ReadDlgProcEncoders()
 {
+	
 	HWND hwnd = EncodersHwnd;
 	HWND had = GetDlgItem(hwnd, IDC_AUTODETECT);
 	autoDetect = (SendMessage(had, BM_GETCHECK, 0, 0) == BST_CHECKED);
@@ -1267,7 +1268,7 @@ void SessionDialog::ReadDlgProc()
 	GetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, alias, MAX_HOST_NAME_LEN);
 	if (ParseDisplay(alias, tmphost, MAX_HOST_NAME_LEN, &m_port)) {
 		for (size_t i = 0, len = strlen(tmphost); i < len; i++)
-			tmphost[i] = toupper(tmphost[i]);
+			tmphost[i] = tmphost[i];
 		_tcscpy_s(m_alias, tmphost);
 	}
 	GetDlgItemText(hwnd, IDC_PROXY_EDIT, hostname, MAX_HOST_NAME_LEN);

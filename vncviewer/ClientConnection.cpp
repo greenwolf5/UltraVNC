@@ -1846,7 +1846,8 @@ void ClientConnection::GetConnectDetails()
 			SessionDialog sessdlg(m_opts, this, m_pDSMPlugin); //sf@2002
 			if (!sessdlg.DoDialog())
 				throw QuietException(sz_L42);
-			_tcsncpy_s(m_host, sessdlg.m_host_dialog, MAX_HOST_NAME_LEN);
+			//_tcsncpy_s(m_host, sessdlg.m_host_dialog, MAX_HOST_NAME_LEN);
+			strcpy(m_host,strtok(sessdlg.m_host_dialog, " "));
 			m_port = sessdlg.m_port;
 			_tcsncpy_s(m_proxyhost, sessdlg.m_proxyhost, MAX_HOST_NAME_LEN);
 			m_proxyport = sessdlg.m_proxyport;

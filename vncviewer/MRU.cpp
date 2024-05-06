@@ -41,7 +41,7 @@ TCHAR RESERVED_CHARS[5] = _T("[;=");  //String of characters that will cause a k
 static const int FIRST_USEABLE_ID = 0;//_T('!');
 static const int LAST_USEABLE_ID = 256;//_T('~');
 static const int MRU_MAX_ITEM_LENGTH = 256; //Managed to get max length to 90. Issue is that we have 101
-static const char* optionFile = "";
+static TCHAR* optionFile = "";
 char buffer[4096];
 //cJSON* jsonParse;
 
@@ -50,6 +50,7 @@ MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 {
     VNCOptions::setDefaultOptionsFileName(m_optionfile);
     m_maxnum = maxnum;
+    optionFile = m_optionfile;
     // Read the index entry
     //ReadIndex();
 }
@@ -59,7 +60,7 @@ MRU::MRU(LPTSTR keyname, unsigned int maxnum)
 // list longer than the maximum, older ones are deleted.
 
 void ofnInit();
-void MRU::AddItem(LPTSTR txt)
+void MRU::AddItem(LPTSTR txt, LPTSTR alias)
 {
     // We don't add empty items.
     if (_tcslen(txt) == 0)
@@ -77,13 +78,14 @@ void MRU::AddItem(LPTSTR txt)
     for (i = 0; i < n; i++) {
         json = cJSON_GetArrayItem(jsonParse, i);
         if(GetItem(i,txt,json)) {
-            cJSON* placeHolderValue;
+            //if it's in list, don't add it
+            /*cJSON* placeHolderValue;
             char strIndex[256];
             sprintf(strIndex, "%d", i);
             cJSON* placeHolder = cJSON_GetArrayItem(jsonParse, i);
             cJSON_ReplaceItemInArray(jsonParse, i, new cJSON);
             cJSON_InsertItemInArray(jsonParse, 0, placeHolder);
-            WriteToOptionFile(jsonParse);
+            WriteToOptionFile(jsonParse);*/
             return;
         }
         
@@ -91,24 +93,27 @@ void MRU::AddItem(LPTSTR txt)
     cJSON* tempObject = cJSON_CreateObject();
     char strIndex[256];
     sprintf(strIndex, "%d", n);
-    cJSON_AddStringToObject(tempObject, strIndex, txt);
+    char connectName[256];
+    sprintf(connectName, "%s | %s", txt, alias);
+    cJSON_AddStringToObject(tempObject, strIndex, connectName);
     cJSON_InsertItemInArray(jsonParse, 0, tempObject);
     WriteToOptionFile(jsonParse);
     
 }
 void MRU::WriteToOptionFile(cJSON* jsonParse) {
-    FILE* fp = fopen(m_optionfile, "w");
+    FILE* fp = fopen(optionFile, "w");
     char* test = cJSON_Print(jsonParse);
     fputs(test, fp);
     fclose(fp);
 }
 cJSON* MRU::OpenJson() {
-    FILE* jsonFile = fopen(m_optionfile, "r");
+    FILE* jsonFile = fopen(optionFile, "r");
     if (jsonFile == NULL) {
-        VNCOptions::setDefaultOptionsFileName(m_optionfile);
-        jsonFile = fopen(m_optionfile, "r");
+        VNCOptions::setDefaultOptionsFileName(optionFile);
+        jsonFile = fopen(optionFile, "r");
     }
-    memset(buffer, '\0', 4096);
+    char buffer[16384];
+    memset(buffer, '\0', 16384);
     int len = fread(buffer, 1, sizeof(buffer), jsonFile);
     fclose(jsonFile);
 
@@ -167,10 +172,24 @@ cJSON* MRU::GetValue(int index, cJSON* json) {
 // Return them in order. 0 is the newest.
 bool MRU::GetItem(int index, LPTSTR txt, cJSON* json)
 {
-    char placeHolder[256];
+    //char placeHolder[256];
+    char* placeHolder;
     cJSON* value = GetValue(index, json);
     if (cJSON_IsString(value) && (value->valuestring != NULL)) {
-        strcpy(placeHolder, value->valuestring);
+        /*for (int i = 0; i < strlen(value->valuestring); i++)
+        {
+            if (value->valuestring[i] != ' ') {
+                placeHolder[i] = value->valuestring[i];
+            }
+            else {
+                break;
+            }
+        }*/
+        char tempValue[256]; 
+        strcpy(tempValue, value->valuestring);
+        placeHolder = strtok(tempValue, " ");
+
+        //strcpy(placeHolder, strtok(value->valuestring, " "));
         //for (int i = 0; i < strlen(value->valuestring); i++) {
         //    placeHolder[i] = value->valuestring[i];
         //}
@@ -189,8 +208,7 @@ int MRU::GetItem(int index, LPTSTR buf, int buflen)
     cJSON* jsonParse = OpenJson();
     if (jsonParse->child != NULL) {
         char* test = cJSON_GetStringValue(cJSON_GetArrayItem(jsonParse, index)->child);
-        cJSON* test3 = cJSON_GetArrayItem(jsonParse, index);
-        char* test2 = cJSON_Print(cJSON_GetArrayItem(jsonParse, index));
+        //test = strtok(test, " ");
         if (test == NULL) {
             return 0;
         }

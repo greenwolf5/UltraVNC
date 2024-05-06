@@ -42,6 +42,7 @@ void SessionDialog::SaveConnection(HWND hwnd, bool saveAs)
 	SettingsFromUI();
 	char fname[_MAX_PATH];
 	int disp = PORT_TO_DISPLAY(m_port);
+	strtok(m_host_dialog, " ");
 	sprintf_s(fname, "%.15s-%d.vnc", m_host_dialog, (disp > 0 && disp < 100) ? disp : m_port);
 	char buffer[_MAX_PATH];
 	getAppData(buffer);
@@ -90,7 +91,8 @@ void SessionDialog::SaveConnection(HWND hwnd, bool saveAs)
 	
 	TCHAR hostname[256];
 	GetDlgItemText(hwnd, IDC_HOSTNAME_EDIT, hostname, 256);
-	m_pMRU->AddItem(hostname);
+	GetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, m_alias, 256);
+	m_pMRU->AddItem(hostname, m_alias);
 	InitMRU(hwnd);
 }
 
@@ -794,7 +796,7 @@ void SessionDialog::LoadFromJson(char* fname, HWND hwnd) {
 		strcat_s(buffer, ".vnc");*/
 		strcat_s(buffer, buf);
 		SaveToFile(buffer, true);
-		m_pMRU->AddItem(m_host);
+		m_pMRU->AddItem(m_host, m_alias);
 		InitMRU(hwnd);
 		SettingsToUI();
 		SetDlgItemText(hwnd, IDC_ALIASNAME_EDIT, m_alias);
@@ -936,6 +938,7 @@ void SessionDialog::IfHostExistLoadSettings(char *hostname)
 	TCHAR tmphost[MAX_HOST_NAME_LEN];
 	int port;
 	ParseDisplay(hostname, tmphost, MAX_HOST_NAME_LEN, &port);
+	strtok(tmphost, " ");
 	char fname[_MAX_PATH];
 	int disp = PORT_TO_DISPLAY(port);
 	sprintf_s(fname, "%.15s-%d.vnc", tmphost, (disp > 0 && disp < 100) ? disp : port);
