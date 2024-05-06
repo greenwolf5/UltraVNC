@@ -337,6 +337,8 @@ ClientConnection::ClientConnection(VNCviewerApp *pApp, LPTSTR host, int port)
 		m_opts->m_Use8Bit = rfbPFFullColors; //true;
 	}
 	_tcsncpy_s(m_host, host, MAX_HOST_NAME_LEN);
+	strtok(m_host, " ");
+
 	m_port = port;
 	_tcsncpy_s(m_proxyhost,m_opts->m_proxyhost, MAX_HOST_NAME_LEN);
 	m_proxyport=m_opts->m_proxyport;
@@ -1320,7 +1322,7 @@ void ClientConnection::GTGBS_CreateToolbar()
 	m_logo_wnd = CreateWindow(
 									"combobox",
 									"",
-									WS_CHILD | WS_VISIBLE | WS_TABSTOP|CBS_SIMPLE | CBS_AUTOHSCROLL | WS_VSCROLL,
+									WS_CHILD | WS_VISIBLE | WS_TABSTOP| CBS_DROPDOWN | CBS_AUTOHSCROLL | WS_VSCROLL,
 									clr.right - clr.left-45-70,
 									4,
 									70,
@@ -1343,7 +1345,8 @@ void ClientConnection::GTGBS_CreateToolbar()
 									NULL);
 	TCHAR valname[256];
 	MRU *m_pMRU;
-	m_pMRU = new MRU(SESSION_MRU_KEY_NAME,98);
+	m_pMRU = new MRU(SESSION_MRU_KEY_NAME,256);
+	m_pMRU->GetItem(0, valname, 255);
 	//adzm 2009-06-21 - show the proxy in the 'recent' box
 	if (m_fUseProxy && strlen(m_proxyhost) > 0) {
 		TCHAR proxyname[MAX_HOST_NAME_LEN];
